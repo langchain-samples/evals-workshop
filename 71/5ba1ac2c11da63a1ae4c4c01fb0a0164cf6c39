@@ -1,0 +1,19 @@
+.env.example
+  s_0d53b5bd850bbc::t_3e6c972557dc6f 4-13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.9",
+  "base_commit_sha": "715ba1ac2c11da63a1ae4c4c01fb0a0164cf6c39",
+  "prompts": {},
+  "sessions": {
+    "s_0d53b5bd850bbc": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "26334000-81e3-4b38-874d-ca88bdbf1d26",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Eric Johanson <eric.johanson@langchain.dev>"
+    }
+  }
+}
