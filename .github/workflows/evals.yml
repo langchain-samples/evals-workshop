@@ -1,13 +1,25 @@
 name: Evals
 
-# Run the evaluation suite on every PR and on pushes to main. A failing gate
-# (a metric below its threshold, or a per-example test assertion) fails the
-# check and blocks the merge.
+# Module 4's reference CI gate: run the offline eval suite and fail the build
+# when quality regresses, so a bad prompt/model/tool change is caught in the PR.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# MANUAL-ONLY BY DEFAULT. This workshop repo ships the workflow as teaching
+# material, not as an active gate: every run makes real (paid) model API calls
+# and needs repo secrets, so auto-running it on every PR would bill anyone who
+# forks the repo and fail for anyone who hasn't configured secrets.
+#
+# To turn it into a real gate in YOUR repo:
+#   1. Add LANGSMITH_API_KEY and ANTHROPIC_API_KEY under
+#      Settings → Secrets and variables → Actions.
+#   2. Uncomment the `pull_request:` / `push:` triggers below.
+#   3. Optionally make it a required status check in branch protection.
+# ─────────────────────────────────────────────────────────────────────────────
 on:
-  pull_request:
-  push:
-    branches: [main]
-  workflow_dispatch: # lets you trigger a run manually from the Actions tab
+  workflow_dispatch: # run on demand from the Actions tab
+  # pull_request:
+  # push:
+  #   branches: [main]
 
 jobs:
   evals:
@@ -19,8 +31,15 @@ jobs:
       LANGSMITH_PROJECT: evals-ci
       # Required by the langsmith pytest plugin's log_* helpers.
       LANGSMITH_TRACING: "true"
-      # Tag experiments with the commit so you can trace a regression to a PR.
+      # Names the *pytest* experiment. github.sha is always a hex SHA, so it is
+      # safe to interpolate directly.
       LANGSMITH_EXPERIMENT: ci-${{ github.sha }}
+      # Commit/branch/author metadata is NOT built here. config.experiment_metadata()
+      # reads the GITHUB_SHA / GITHUB_REF_NAME / GITHUB_ACTOR env vars that Actions
+      # sets on every job, and json-encodes them in Python. Interpolating
+      # ${{ github.ref_name }} or ${{ github.actor }} into a JSON string here would
+      # be template-unsafe: a branch name containing a quote breaks the JSON, and a
+      # crafted one could inject extra keys. Read env vars; don't concatenate.
     steps:
       - uses: actions/checkout@v4
 
@@ -32,13 +51,23 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      # Note: response caching (fixtures/cassettes) is intentionally DISABLED in
+      # CI — conftest.py skips it when $CI is set. A gate that replays recorded
+      # model responses can never detect that the live model regressed.
+
       # --- Per-example gate: granular pass/fail, shows which example broke ---
       - name: Per-example eval tests
         run: pytest module_4_ci/test_evals.py -v --langsmith-output
 
       # --- Aggregate gate: dataset-level thresholds per metric ---
+      # --split test keeps the `train` examples out of the gate, so prompts and
+      # few-shot judges can be tuned without tuning against the gate itself.
       - name: Single-turn aggregate gate
-        run: python module_4_ci/ci_gate.py --suite single_turn
+        run: python module_4_ci/ci_gate.py --suite single_turn --split test
 
       - name: Agent aggregate gate
-        run: python module_4_ci/ci_gate.py --suite agent
+        run: python module_4_ci/ci_gate.py --suite agent --split test
+
+      # --- Failure handling, via mocked tool outputs (no real systems touched) ---
+      - name: Tool-failure gate (mocked)
+        run: python module_4_ci/ci_gate.py --suite tool_failures --split test

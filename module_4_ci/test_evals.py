@@ -12,6 +12,15 @@ We assert only on the DETERMINISTIC, safety-critical metrics here — they're
 cheap, stable, and the right thing to *block a merge* on. Fuzzy LLM-judge
 metrics are better tracked as trends via the aggregate gate (ci_gate.py) than
 as hard per-example asserts, because a single judge call can be noisy.
+
+Two things conftest.py sets up for these tests:
+  - **Split filtering.** Only the `test` split runs here. The `train` examples
+    are scratch space for tuning prompts and judges; gating on them would mean
+    tuning against your own gate.
+  - **Response caching.** Locally, model API calls are recorded to
+    `fixtures/cassettes/` and replayed, so re-running is fast and free. In CI
+    (`CI=true`) caching is off — a gate replaying stale responses can't detect a
+    real regression.
 """
 
 from __future__ import annotations
@@ -25,6 +34,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from langsmith import testing as t
 
+from conftest import CACHE_MARK
+from config import experiment_metadata
 from hr_agent import run_agent
 from hr_agent.trajectory import extract_tool_calls, extract_trajectory, final_response
 from module_2_single_turn.datasets import EXAMPLES as SINGLE_TURN_EXAMPLES
@@ -35,6 +46,14 @@ from module_2_single_turn.deterministic_evals import (
 from module_3_agent_evals.datasets import EXAMPLES as AGENT_EXAMPLES
 from module_3_agent_evals.tool_evals import correct_employee_id
 from module_3_agent_evals.trajectory_evals import no_forbidden_tools, required_tools_used
+
+# Gate on the `test` split only — see the module docstring.
+GATED_SPLIT = "test"
+SINGLE_TURN_GATED = [e for e in SINGLE_TURN_EXAMPLES if e.get("split") == GATED_SPLIT]
+AGENT_GATED = [e for e in AGENT_EXAMPLES if e.get("split") == GATED_SPLIT]
+
+# Tag the pytest experiment with commit/branch/model, same as the aggregate gate.
+LS_MARK = {**CACHE_MARK, "experiment_metadata": experiment_metadata(suite="ci-pytest")}
 
 
 def _safe(fn, *args, **kwargs):
@@ -49,8 +68,8 @@ def _safe(fn, *args, **kwargs):
 
 
 # --- Single-turn: every policy answer must be non-empty and hit its facts ---
-@pytest.mark.langsmith
-@pytest.mark.parametrize("example", SINGLE_TURN_EXAMPLES, ids=lambda e: e["outputs"]["policy_topic"])
+@pytest.mark.langsmith(**LS_MARK)
+@pytest.mark.parametrize("example", SINGLE_TURN_GATED, ids=lambda e: e["outputs"]["policy_topic"])
 def test_single_turn_answer(example):
     inputs, reference = example["inputs"], example["outputs"]
     _safe(t.log_inputs, inputs)
@@ -68,8 +87,8 @@ def test_single_turn_answer(example):
 
 
 # --- Agent: never call a forbidden tool; use the right id; do required steps ---
-@pytest.mark.langsmith
-@pytest.mark.parametrize("example", AGENT_EXAMPLES, ids=lambda e: e["inputs"]["question"][:40])
+@pytest.mark.langsmith(**LS_MARK)
+@pytest.mark.parametrize("example", AGENT_GATED, ids=lambda e: e["inputs"]["question"][:40])
 def test_agent_trajectory(example):
     inputs, reference = example["inputs"], example["outputs"]
     _safe(t.log_inputs, inputs)

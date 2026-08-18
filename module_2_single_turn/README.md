@@ -53,3 +53,37 @@ python module_2_single_turn/structured_output.py
 
 Next: **Module 3**, where we stop judging the final answer alone and start
 judging *how the agent got there* — the tool-call trajectory.
+
+---
+
+## Dataset conventions introduced here
+
+`datasets.py` is where the repo's dataset conventions show up in full:
+
+```python
+client.create_dataset(
+    dataset_name="hr-onboarding/policy-qa/v1",     # {domain}/{capability}/{version}
+    metadata={"owner": ..., "capability": ..., "module": 2},
+)
+client.create_examples(
+    inputs=[...], outputs=[...],
+    metadata=[{"policy_topic": "vacation", "difficulty": "easy"}, ...],
+    splits=["test", "test", "test", "train", "train"],
+)
+```
+
+- **Name** — slashes sort and filter cleanly once you have dozens of datasets.
+- **Metadata** — dataset-level for discovery, example-level for slicing results
+  ("how do we do on `difficulty: hard`?"). Both are filterable in the UI.
+- **Splits** — `test` is what CI gates on; `train` is scratch space for tuning
+  prompts and few-shot judges. `metadata` and `splits` are *per-example*
+  sequences, positionally aligned with `inputs`/`outputs`.
+
+Run a suite against one split:
+
+```python
+data = list(client.list_examples(dataset_name=DATASET_NAME, splits=["test"]))
+client.evaluate(target, data=data, ...)
+```
+
+`examples_for_split(client, "test")` in `datasets.py` wraps that.

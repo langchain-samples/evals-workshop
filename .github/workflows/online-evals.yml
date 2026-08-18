@@ -1,12 +1,21 @@
 name: Online Evals (production monitor)
 
 # Module 7's counterpart to evals.yml. Where evals.yml gates a PR with the OFFLINE
-# suite, this runs the ONLINE monitor on a schedule: score recent production
-# traces, compare to the committed baseline, and fail (alert) on quality drift.
+# suite, this runs the ONLINE monitor: score recent production traces, compare to
+# the committed baseline, and fail (alert) on quality drift.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# MANUAL-ONLY BY DEFAULT — the schedule is commented out. A daily cron in a
+# workshop repo would make paid model calls forever against a project that may
+# not exist, failing every morning for anyone who forked it.
+#
+# To run it for real: add the secrets (see below), point LANGSMITH_PROJECT at
+# your production project, and uncomment the `schedule:` block.
+# ─────────────────────────────────────────────────────────────────────────────
 on:
-  schedule:
-    - cron: "17 7 * * *" # daily at 07:17 UTC — off the top of the hour on purpose
   workflow_dispatch: # run on demand from the Actions tab
+  # schedule:
+  #   - cron: "17 7 * * *" # daily at 07:17 UTC — off the top of the hour on purpose
 
 jobs:
   monitor:

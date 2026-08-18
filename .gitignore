@@ -31,5 +31,15 @@ env/
 # --- Workshop scratch ---
 .demo_state.json
 
+# --- VCR cassettes (recorded model responses) ---
+# NOT committed, deliberately. They contain no credentials (langsmith's VCR
+# config strips every request header before recording), but:
+#   1. this is a public repo, and responses carry workspace-identifying headers
+#      (e.g. Anthropic-Organization-Id) and internal gateway URLs;
+#   2. cassette filenames are keyed on the LangSmith *dataset UUID*, so a
+#      cassette recorded in one workspace never replays in another anyway.
+# Each user records their own on first run. See module_4_ci/README.md.
+fixtures/cassettes/
+
 # --- Facilitator-only notes (not for public sharing) ---
 FACILITATOR.md
