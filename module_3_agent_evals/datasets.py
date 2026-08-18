@@ -15,7 +15,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from langsmith import Client
 
-DATASET_NAME = "HR Workshop — Module 3 (agent trajectories)"
+# {domain}/{capability}/{version_or_variant} — see the top-level README.
+DATASET_NAME = "hr-onboarding/tool-selection/v1"
 
 # Note: lists/dicts inside example outputs are fine — LangSmith stores them as
 # JSON. Evaluators read them back from reference_outputs.
@@ -37,6 +38,8 @@ EXAMPLES = [
             "expected_employee_id": "E1007",
             "forbidden_tools": ["schedule_orientation"],
         },
+        "metadata": {"task_type": "multi-provision", "steps": 4, "difficulty": "medium", "source": "hand-written"},
+        "split": "test",
     },
     {
         "inputs": {
@@ -48,6 +51,8 @@ EXAMPLES = [
             "expected_employee_id": "E1008",
             "forbidden_tools": ["create_it_account", "provision_equipment"],
         },
+        "metadata": {"task_type": "scheduling", "steps": 2, "difficulty": "easy", "source": "hand-written"},
+        "split": "test",
     },
     {
         "inputs": {
@@ -68,6 +73,8 @@ EXAMPLES = [
             "expected_employee_id": "E1009",
             "forbidden_tools": [],
         },
+        "metadata": {"task_type": "multi-provision", "steps": 5, "difficulty": "hard", "source": "hand-written"},
+        "split": "train",
     },
     {
         "inputs": {
@@ -81,6 +88,8 @@ EXAMPLES = [
             "expected_employee_id": "E1007",
             "forbidden_tools": ["create_it_account", "provision_equipment", "schedule_orientation"],
         },
+        "metadata": {"task_type": "read-only", "steps": 2, "difficulty": "medium", "source": "hand-written"},
+        "split": "test",
     },
 ]
 
@@ -93,13 +102,30 @@ def ensure_dataset(client: Client | None = None) -> str:
     dataset = client.create_dataset(
         dataset_name=DATASET_NAME,
         description="Module 3: multi-step onboarding tasks with expected tool trajectories.",
+        metadata={
+            "owner": "evals-workshop",
+            "capability": "tool-selection",
+            "module": 3,
+            "complexity": "high",
+            "source": "hand-written",
+        },
     )
     client.create_examples(
         dataset_id=dataset.id,
         inputs=[e["inputs"] for e in EXAMPLES],
         outputs=[e["outputs"] for e in EXAMPLES],
+        metadata=[e["metadata"] for e in EXAMPLES],
+        splits=[e["split"] for e in EXAMPLES],
     )
     return DATASET_NAME
+
+
+def examples_for_split(client: Client, split: str | None = None):
+    """Return the examples in one split — what you pass to `evaluate(data=...)`."""
+    ensure_dataset(client)
+    if split is None:
+        return DATASET_NAME
+    return list(client.list_examples(dataset_name=DATASET_NAME, splits=[split]))
 
 
 if __name__ == "__main__":
@@ -107,4 +133,7 @@ if __name__ == "__main__":
 
     require_langsmith()
     name = ensure_dataset()
-    print(f"Dataset ready: {name} ({len(EXAMPLES)} examples)")
+    counts: dict[str, int] = {}
+    for e in EXAMPLES:
+        counts[e["split"]] = counts.get(e["split"], 0) + 1
+    print(f"Dataset ready: {name} ({len(EXAMPLES)} examples; splits: {counts})")

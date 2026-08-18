@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from langsmith import Client
 
-from config import require_langsmith
+from config import experiment_metadata, require_langsmith
 from hr_agent import run_agent
 from hr_agent.trajectory import final_response
 from module_2_single_turn.datasets import ensure_dataset, DATASET_NAME
@@ -40,6 +40,8 @@ def main() -> None:
         data=DATASET_NAME,
         evaluators=[*DETERMINISTIC_EVALUATORS, *LLM_JUDGE_EVALUATORS],
         experiment_prefix="module-2-single-turn",
+        metadata=experiment_metadata(module=2, suite="single-turn"),
+        description="Deterministic + LLM-judge evaluators over single-turn policy Q&A.",
         max_concurrency=4,
     )
 

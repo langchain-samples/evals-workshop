@@ -88,10 +88,10 @@ job to operate.
 
 - In the UI: **Tracing project → Rules → + New Rule → Run an evaluator**, set a
   sampling rate, and pick/author the evaluator.
-- From code: the `langsmith-evaluator` skill ships
-  `scripts/upload_evaluators.py`, which uploads a code evaluator as a project rule
-  with `--project` and `--sample-rate`. Same reference-free evaluators, attached
-  server-side instead of looped here.
+- From code: the `langsmith-evaluator` skill ships an `upload_evaluators.py`
+  helper that registers a code evaluator as a project rule with `--project` and
+  `--sample-rate`. Same reference-free evaluators, attached server-side instead
+  of looped here. *(That script lives in the skill, not in this repo.)*
 
 > Production tip: sampling matters. Scoring 100% of high-volume traffic with an LLM
 > judge gets expensive fast — sample for the online signal, and run the full set

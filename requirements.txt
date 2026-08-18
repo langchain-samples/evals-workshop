@@ -1,7 +1,9 @@
 # Core LangChain + LangSmith (LangChain 1.0 LTS)
 langchain>=1.0,<2.0
 langchain-core>=1.0,<2.0
-langsmith[pytest]>=0.3.4
+# [pytest] = rich test output + the @pytest.mark.langsmith integration
+# [vcr]    = record/replay of model API calls for fast, free local test loops
+langsmith[pytest,vcr]>=0.3.4
 
 # Model provider — Anthropic by default (swap/add as needed)
 langchain-anthropic>=1.0,<2.0

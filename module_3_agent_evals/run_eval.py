@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from langsmith import Client
 
-from config import require_langsmith
+from config import experiment_metadata, require_langsmith
 from hr_agent import run_agent
 from hr_agent.trajectory import extract_tool_calls, extract_trajectory, final_response
 from module_3_agent_evals.datasets import ensure_dataset, DATASET_NAME
@@ -49,6 +49,8 @@ def main() -> None:
             *LLM_TRAJECTORY_EVALUATORS,  # holistic "was this reasonable?"
         ],
         experiment_prefix="module-3-agent-evals",
+        metadata=experiment_metadata(module=3, suite="agent-trajectories"),
+        description="Trajectory, tool-argument, and LLM-judge evaluators over multi-step onboarding tasks.",
         max_concurrency=4,
     )
 

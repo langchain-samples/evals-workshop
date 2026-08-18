@@ -11,6 +11,8 @@ dataset per metric. (The pytest approach in test_evals.py is the
 Usage:
     python module_4_ci/ci_gate.py --suite single_turn
     python module_4_ci/ci_gate.py --suite agent
+    python module_4_ci/ci_gate.py --suite tool_failures
+    python module_4_ci/ci_gate.py --suite single_turn --split test
     python module_4_ci/ci_gate.py --suite single_turn --threshold 0.9
 """
 
@@ -25,7 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from langsmith import Client
 
-from config import require_langsmith
+from config import experiment_metadata, require_langsmith
 
 # Per-metric pass thresholds. Tune these to your risk tolerance. Safety-style
 # metrics (no_forbidden_tools) demand a perfect score; fuzzy quality metrics
@@ -46,7 +48,11 @@ THRESHOLDS: dict[str, float] = {
     "correct_employee_id": 1.0,
     "tool_args_well_formed": 1.0,
     "trajectory_is_reasonable": 0.8,
+    # tool failures (mocked)
+    "reports_tool_failure": 1.0,
 }
+
+SUITES = ("single_turn", "agent", "tool_failures")
 
 
 def build_suite(suite: str):
@@ -85,7 +91,38 @@ def build_suite(suite: str):
             *TRAJECTORY_EVALUATORS, *TOOL_EVALUATORS, *LLM_TRAJECTORY_EVALUATORS,
         ]
 
-    raise SystemExit(f"Unknown suite '{suite}'. Choose 'single_turn' or 'agent'.")
+    if suite == "tool_failures":
+        # Mocked-tool suite: scenarios the real tools can't produce. See
+        # module_3_agent_evals/mocked_eval.py.
+        from module_3_agent_evals.mock_datasets import ensure_dataset, DATASET_NAME
+        from module_3_agent_evals.mocked_eval import target
+        from module_3_agent_evals.tool_evals import FAILURE_EVALUATORS
+        from module_3_agent_evals.trajectory_evals import no_forbidden_tools, required_tools_used
+
+        ensure_dataset()
+        return target, DATASET_NAME, [
+            *FAILURE_EVALUATORS, required_tools_used, no_forbidden_tools,
+        ]
+
+    raise SystemExit(f"Unknown suite '{suite}'. Choose one of: {', '.join(SUITES)}.")
+
+
+def resolve_data(client: Client, dataset_name: str, split: str | None):
+    """What to pass as `evaluate(data=...)`: the whole dataset, or one split.
+
+    Running the gate on the `test` split keeps `train` examples free for tuning
+    prompts and few-shot judges — tune against the gate and the gate stops
+    measuring anything.
+    """
+    if not split:
+        return dataset_name
+    examples = list(client.list_examples(dataset_name=dataset_name, splits=[split]))
+    if not examples:
+        raise SystemExit(
+            f"No examples in split '{split}' of dataset '{dataset_name}'. "
+            "Re-run the module's datasets.py, or drop --split."
+        )
+    return examples
 
 
 def aggregate_scores(results) -> dict[str, float]:
@@ -102,7 +139,9 @@ def aggregate_scores(results) -> dict[str, float]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run an eval suite as a CI gate.")
-    parser.add_argument("--suite", choices=["single_turn", "agent"], required=True)
+    parser.add_argument("--suite", choices=list(SUITES), required=True)
+    parser.add_argument("--split", default=None,
+                        help="Only evaluate this dataset split (e.g. 'test'). Default: all.")
     parser.add_argument("--threshold", type=float, default=None,
                         help="Override: apply this single threshold to every metric.")
     args = parser.parse_args()
@@ -110,18 +149,26 @@ def main() -> None:
     require_langsmith()
     client = Client()
     target, dataset_name, evaluators = build_suite(args.suite)
+    data = resolve_data(client, dataset_name, args.split)
 
     results = client.evaluate(
         target,
-        data=dataset_name,
+        data=data,
         evaluators=evaluators,
         experiment_prefix=f"ci-gate-{args.suite}",
+        # This is what actually ties an experiment to a commit. The
+        # LANGSMITH_EXPERIMENT env var only affects the pytest plugin, not
+        # client.evaluate — see config.experiment_metadata.
+        metadata=experiment_metadata(suite=args.suite, split=args.split or "all", gate=True),
+        description=f"CI gate for the '{args.suite}' suite"
+                    + (f" (split: {args.split})." if args.split else "."),
         max_concurrency=4,
     )
 
     means = aggregate_scores(results)
 
-    print(f"\n=== CI gate: {args.suite} ===")
+    scope = f"{args.suite}" + (f" [split: {args.split}]" if args.split else "")
+    print(f"\n=== CI gate: {scope} ===")
     failures: list[str] = []
     for metric in sorted(means):
         mean = means[metric]

@@ -11,6 +11,10 @@
 | **Per-example gate** | `test_evals.py` | One pytest case per dataset example. CI shows *exactly which* example broke. | Deterministic, safety-critical checks you want to hard-block on. |
 | **Aggregate gate** | `ci_gate.py` | Mean score per metric vs a threshold; non-zero exit fails the build. | Dataset-level quality bars, including fuzzy LLM-judge metrics tracked as trends. |
 
+Three suites are available to the aggregate gate: `single_turn`, `agent`, and
+`tool_failures` (the mocked failure scenarios from Module 3 — no real systems
+touched, so it's safe and cheap to run on every PR).
+
 A good rule: **hard-assert the deterministic/safety metrics per-example**
 (never call a forbidden tool, always use the right employee id), and **gate the
 fuzzy quality metrics in aggregate** (correctness ≥ 0.8 across the set), since
@@ -23,16 +27,98 @@ a single LLM-judge call can be noisy but the mean is stable.
 pytest module_4_ci/test_evals.py -v --langsmith-output
 
 # Aggregate gates (exit non-zero on regression)
-python module_4_ci/ci_gate.py --suite single_turn
-python module_4_ci/ci_gate.py --suite agent
+python module_4_ci/ci_gate.py --suite single_turn --split test
+python module_4_ci/ci_gate.py --suite agent --split test
+python module_4_ci/ci_gate.py --suite tool_failures --split test
 ```
 
 ## The GitHub Actions workflow
 
-[`.github/workflows/evals.yml`](../.github/workflows/evals.yml) runs all three
-on every PR. Add `LANGSMITH_API_KEY` and `ANTHROPIC_API_KEY` under **repo
-Settings → Secrets and variables → Actions**. Experiments are tagged with the
-commit SHA so a regression traces straight back to the PR that caused it.
+[`.github/workflows/evals.yml`](../.github/workflows/evals.yml) is the reference
+gate: it runs all four checks in one job.
+
+> **It is manual-only in this repo.** The workflow ships as teaching material,
+> so its triggers are `workflow_dispatch` (Actions tab → Run workflow) and
+> nothing else. Every run makes real, paid model calls and needs secrets — a
+> workshop repo that auto-ran on every PR would bill anyone who forked it and
+> fail for anyone who hadn't configured keys.
+>
+> **To make it a real gate in your repo:** add `LANGSMITH_API_KEY` and
+> `ANTHROPIC_API_KEY` under **Settings → Secrets and variables → Actions**,
+> uncomment the `pull_request:` / `push:` triggers at the top of the file, and
+> make it a required status check in branch protection. All three steps matter —
+> a workflow that runs but isn't required doesn't gate anything.
+
+Experiments are tagged with the commit, branch, author, and model so a
+regression traces straight back to the PR that caused it — but *how* that
+happens differs by gate, and it's a common trip-up:
+
+| Gate | How it gets tagged |
+|------|--------------------|
+| `pytest` (`test_evals.py`) | `LANGSMITH_EXPERIMENT` names it; `LANGSMITH_EXPERIMENT_METADATA` (JSON) and the `experiment_metadata=` mark argument tag it. |
+| `ci_gate.py` | `metadata=experiment_metadata()` passed to `client.evaluate`. |
+
+> **`LANGSMITH_EXPERIMENT` is read only by the langsmith pytest plugin.** Setting
+> it does nothing for experiments created by `client.evaluate` — those need
+> `metadata=` passed explicitly. See `config.experiment_metadata()`.
+
+## Splits: gate on `test` only
+
+Both gates run against the `test` split. The `train` examples exist so you can
+tune prompts and few-shot judges without tuning against your own gate.
+
+```bash
+python module_4_ci/ci_gate.py --suite single_turn --split test
+```
+
+## Response caching: fast locally, off in CI
+
+`conftest.py` points `LANGSMITH_TEST_CACHE` at `fixtures/cassettes/`, so local
+`pytest` runs record model API calls (via `vcrpy`) and replay them afterwards.
+Measured on this suite:
+
+| Run | Time |
+|-----|------|
+| Cold (recording) | ~45 s |
+| Warm (partial — agent took a new path) | ~15 s |
+| Warm (fully cached) | **~1.4 s** |
+
+Roughly a 30× loop speedup, and free. Worth knowing about the middle row:
+`record_mode` is `new_episodes` and requests are matched on the **body**, so
+until the cassette covers every path the agent takes, some runs still make live
+calls (and can still be flaky). It settles after a couple of runs.
+
+**Disabled when `$CI` is set — deliberately.** A gate that replays yesterday's
+recorded responses cannot detect that today's model regressed; it would pass
+forever and tell you nothing. Caching is a development-speed tool; the gate must
+make real calls. `WORKSHOP_NO_CACHE=1` forces real calls locally too.
+
+### The `cached_hosts` trap
+
+The obvious way to cache only model traffic is
+`@pytest.mark.langsmith(cached_hosts=["api.anthropic.com"])`. **Check that it
+actually records anything.** Model calls don't always leave for the provider's
+own domain — a gateway, proxy, or corporate egress in front of the provider
+changes the host your process really connects to. The filter then matches
+nothing and caching looks enabled while recording zero requests. An empty
+`fixtures/cassettes/` after a run is the tell.
+
+Don't guess the host. Record once with no filter, then read it off the cassette:
+
+```bash
+grep -m1 'uri:' fixtures/cassettes/*.yaml
+```
+
+So the default here passes **no** host filter: the langsmith plugin already
+excludes the LangSmith API itself (`ignore_hosts=[client.api_url]`), so traces
+and feedback are always written for real while everything else is cached. Set
+`WORKSHOP_CACHED_HOSTS=host1,host2` once you've confirmed the real hosts.
+
+Cassettes are **gitignored**. No credentials reach disk (langsmith's VCR config
+strips every request header before recording), but responses carry
+workspace-identifying headers, and cassette filenames are keyed on the LangSmith
+*dataset UUID* — so a cassette recorded in one workspace would never replay in
+another anyway. Delete the directory to re-record.
 
 ## Setting thresholds (the hard part)
 

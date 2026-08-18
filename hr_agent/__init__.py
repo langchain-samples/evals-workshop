@@ -17,13 +17,23 @@ __all__ = [
     "extract_trajectory",
     "extract_tool_calls",
     "final_response",
+    "DatasetDrivenMockMiddleware",
+    "ToolMockMiddleware",
 ]
+
+_LAZY = {
+    "build_agent": "hr_agent.agent",
+    "run_agent": "hr_agent.agent",
+    "ToolMockMiddleware": "hr_agent.mocking",
+    "DatasetDrivenMockMiddleware": "hr_agent.mocking",
+}
 
 
 def __getattr__(name: str):
-    # PEP 562 lazy import: only pulls in agent.py (and langchain) on first use.
-    if name in ("build_agent", "run_agent"):
-        from hr_agent import agent
+    # PEP 562 lazy import: only pulls in langchain on first use, so the pure
+    # deterministic pieces stay importable with zero dependencies.
+    if name in _LAZY:
+        import importlib
 
-        return getattr(agent, name)
+        return getattr(importlib.import_module(_LAZY[name]), name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -1,5 +1,6 @@
-"""Reset the Session 2 demo state — delete the production project and the
-annotation queue so a live run starts from a clean slate.
+"""Reset the Session 2 demo state — delete the production project, the
+annotation queue, and the production-curated dataset so a live run starts from
+a clean slate. The hand-written module datasets are left intact.
 
 Run this between workshop cohorts (or before a fresh demo) so
 `production_traffic.py` creates the project anew and the annotation queue starts
@@ -20,6 +21,7 @@ from langsmith import Client
 from config import require_langsmith
 from module_5_online_evals.project import PRODUCTION_PROJECT
 from module_6_improving_evals.annotation_queue import QUEUE_NAME
+from module_6_improving_evals.curate_dataset import DATASET_NAME as CURATED_DATASET
 
 
 def main() -> None:
@@ -43,6 +45,17 @@ def main() -> None:
             print(f"Deleted annotation queue '{QUEUE_NAME}'.")
     except Exception as e:
         print(f"Annotation queue not deleted ({type(e).__name__}: {e}).")
+
+    # 3) Delete the dataset curated from production traces. The hand-written
+    # module datasets are left alone — they're part of the workshop material.
+    try:
+        if client.has_dataset(dataset_name=CURATED_DATASET):
+            client.delete_dataset(dataset_name=CURATED_DATASET)
+            print(f"Deleted curated dataset '{CURATED_DATASET}'.")
+        else:
+            print(f"Curated dataset '{CURATED_DATASET}' not found (already clean).")
+    except Exception as e:
+        print(f"Curated dataset not deleted ({type(e).__name__}: {e}).")
 
     print("\nReset complete. Re-run module_5_online_evals/production_traffic.py to repopulate.")
 

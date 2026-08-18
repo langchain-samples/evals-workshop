@@ -19,11 +19,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from langsmith import Client
 
-from config import require_langsmith
+from config import experiment_metadata, require_langsmith
 from hr_agent import run_agent
 from hr_agent.trajectory import final_response
 
-DATASET_NAME = "HR Workshop — Module 1 (first eval)"
+# Dataset naming convention: {domain}/{capability}/{version_or_variant}.
+# Slash-separated names sort and filter cleanly once you have dozens of them —
+# far better than prose titles. See the top-level README.
+DATASET_NAME = "hr-onboarding/policy-qa/intro"
 
 
 # --- 1. DATASET ----------------------------------------------------------
@@ -34,14 +37,20 @@ EXAMPLES = [
     {
         "inputs": {"question": "How many vacation days do new employees get?"},
         "outputs": {"expected_fact": "15"},
+        "metadata": {"policy_topic": "vacation", "difficulty": "easy"},
+        "split": "test",
     },
     {
         "inputs": {"question": "How many paid sick days are there per year?"},
         "outputs": {"expected_fact": "10"},
+        "metadata": {"policy_topic": "sick_leave", "difficulty": "easy"},
+        "split": "test",
     },
     {
         "inputs": {"question": "What is the 401(k) match?"},
         "outputs": {"expected_fact": "4%"},
+        "metadata": {"policy_topic": "401k", "difficulty": "easy"},
+        "split": "train",
     },
 ]
 
@@ -53,11 +62,22 @@ def ensure_dataset(client: Client) -> str:
     dataset = client.create_dataset(
         dataset_name=DATASET_NAME,
         description="Module 1: three HR policy questions for the first eval.",
+        # Dataset-level metadata is how you find this again among hundreds.
+        metadata={
+            "owner": "evals-workshop",
+            "capability": "policy-qa",
+            "module": 1,
+            "source": "hand-written",
+        },
     )
     client.create_examples(
         dataset_id=dataset.id,
         inputs=[e["inputs"] for e in EXAMPLES],
         outputs=[e["outputs"] for e in EXAMPLES],
+        # Per-example metadata (tag it) and splits (slice it). Both are
+        # per-example sequences, positionally aligned with inputs/outputs.
+        metadata=[e["metadata"] for e in EXAMPLES],
+        splits=[e["split"] for e in EXAMPLES],
     )
     return DATASET_NAME
 
@@ -93,6 +113,10 @@ def main() -> None:
         data=DATASET_NAME,
         evaluators=[mentions_expected_fact],
         experiment_prefix="module-1-first-eval",
+        # Tag the experiment with the code + config that produced it, so a
+        # regression in the UI traces back to a commit and a model.
+        metadata=experiment_metadata(module=1, suite="first-eval"),
+        description="Module 1: first end-to-end eval over three policy questions.",
         max_concurrency=3,
     )
 

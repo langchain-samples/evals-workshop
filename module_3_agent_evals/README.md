@@ -63,3 +63,65 @@ python module_3_agent_evals/run_eval.py
 
 Next: **Module 4** — wire these experiments into CI so a regression fails the
 build before it reaches `main`.
+
+---
+
+## Mocking tool outputs (`mock_datasets.py` + `mocked_eval.py`)
+
+Everything above evaluates the agent against its **real** tools. Those tools
+always succeed — they read static data — so there is an entire class of behavior
+we cannot reach: what does the agent do when a tool *fails*?
+
+That's what [`hr_agent/mocking.py`](../hr_agent/mocking.py) is for. It's a
+LangChain `AgentMiddleware` that overrides `wrap_tool_call` to return a canned
+`ToolMessage` instead of executing the tool:
+
+```python
+from hr_agent import DatasetDrivenMockMiddleware, run_agent
+
+mock = DatasetDrivenMockMiddleware({
+    "lookup_employee":   {"employee_id": "E1007", "full_name": "Jordan Lee"},
+    "create_it_account": {"status": "failed", "error": "IT system down"},
+})
+result = run_agent("Create an email account for Jordan Lee.", middleware=[mock])
+```
+
+The agent's own code is untouched — only the world around it changes. That's
+what keeps this an eval of the agent rather than an eval of a different app.
+
+### Why mock at all
+
+| Reason | What it buys you |
+|--------|------------------|
+| **Coverage** | Test states the real tools can't produce — outages, partial failures, empty results. **The main reason here.** |
+| **Determinism** | A flaky downstream service becomes a flaky eval score. |
+| **Isolation** | You're grading the agent's reasoning, not the tools. |
+| **Cost & speed** | No real API calls. |
+| **Offline/CI** | CI usually has no route to production systems. |
+
+### Where the mocks live
+
+Each example in `mock_datasets.py` carries its own mock table under
+`inputs["tool_outputs"]`, so one dataset row fully describes one world state.
+
+> **Why `inputs` and not `outputs`?** `client.evaluate` only passes `inputs`,
+> `attachments`, and `metadata` to a target function — there is no `example`
+> argument (see `langsmith.evaluation._runner._get_target_args`). Mocks are also
+> conceptually inputs: they describe the *scenario*, not the ground truth.
+
+### The evaluator that matters
+
+`reports_tool_failure` (in `tool_evals.py`) catches the expensive failure mode:
+a tool returns `{"status": "failed"}` and the agent cheerfully tells the user
+their account is ready. You cannot catch that without mocking.
+
+```bash
+python module_3_agent_evals/mock_datasets.py   # create the dataset
+python module_3_agent_evals/mocked_eval.py     # run the experiment
+```
+
+### Strict vs permissive
+
+`DatasetDrivenMockMiddleware(..., strict=True)` raises if the agent calls a tool
+the example didn't mock. Use that in CI, where reaching a real system would be a
+bug. `strict=False` falls through to the real tool.

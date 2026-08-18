@@ -15,7 +15,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from langsmith import Client
 
-DATASET_NAME = "HR Workshop — Module 2 (single-turn Q&A)"
+# {domain}/{capability}/{version_or_variant} — see the top-level README.
+DATASET_NAME = "hr-onboarding/policy-qa/v1"
 
 EXAMPLES = [
     {
@@ -28,6 +29,8 @@ EXAMPLES = [
                 "at 1.25 days per month, usable after the 90-day probationary period."
             ),
         },
+        "metadata": {"policy_topic": "vacation", "difficulty": "easy", "source": "hand-written"},
+        "split": "test",
     },
     {
         "inputs": {"question": "When does my health insurance start?"},
@@ -43,6 +46,8 @@ EXAMPLES = [
                 "month following your start date. You have 30 days to enroll."
             ),
         },
+        "metadata": {"policy_topic": "health_insurance", "difficulty": "medium", "source": "hand-written"},
+        "split": "test",
     },
     {
         "inputs": {"question": "What's the 401k match and when am I eligible?"},
@@ -54,6 +59,8 @@ EXAMPLES = [
                 "of employment, and the match vests immediately."
             ),
         },
+        "metadata": {"policy_topic": "401k", "difficulty": "medium", "source": "hand-written"},
+        "split": "test",
     },
     {
         "inputs": {"question": "Can I work from home?"},
@@ -65,6 +72,8 @@ EXAMPLES = [
                 "Friday. Fully-remote arrangements need VP approval."
             ),
         },
+        "metadata": {"policy_topic": "remote_work", "difficulty": "hard", "source": "hand-written"},
+        "split": "train",
     },
     {
         "inputs": {"question": "How long do I have to submit an expense report, and do I need receipts?"},
@@ -76,6 +85,8 @@ EXAMPLES = [
                 "are required for anything over $25."
             ),
         },
+        "metadata": {"policy_topic": "expenses", "difficulty": "medium", "source": "hand-written"},
+        "split": "train",
     },
 ]
 
@@ -88,13 +99,37 @@ def ensure_dataset(client: Client | None = None) -> str:
     dataset = client.create_dataset(
         dataset_name=DATASET_NAME,
         description="Module 2: single-turn HR policy questions with reference answers.",
+        metadata={
+            "owner": "evals-workshop",
+            "capability": "policy-qa",
+            "module": 2,
+            "complexity": "low",
+            "source": "hand-written",
+        },
     )
     client.create_examples(
         dataset_id=dataset.id,
         inputs=[e["inputs"] for e in EXAMPLES],
         outputs=[e["outputs"] for e in EXAMPLES],
+        # Tag every example (filterable in the UI) and assign it to a split.
+        # 'test' is what CI gates on; 'train' is scratch space for tuning
+        # prompts and few-shot judges without contaminating the gate.
+        metadata=[e["metadata"] for e in EXAMPLES],
+        splits=[e["split"] for e in EXAMPLES],
     )
     return DATASET_NAME
+
+
+def examples_for_split(client: Client, split: str | None = None):
+    """Return the examples in one split — what you pass to `evaluate(data=...)`.
+
+    ``client.evaluate(target, data=examples_for_split(client, "test"))`` runs the
+    experiment over just that slice. Pass ``None`` for the whole dataset.
+    """
+    ensure_dataset(client)
+    if split is None:
+        return DATASET_NAME
+    return list(client.list_examples(dataset_name=DATASET_NAME, splits=[split]))
 
 
 if __name__ == "__main__":
@@ -102,4 +137,7 @@ if __name__ == "__main__":
 
     require_langsmith()
     name = ensure_dataset()
-    print(f"Dataset ready: {name} ({len(EXAMPLES)} examples)")
+    counts: dict[str, int] = {}
+    for e in EXAMPLES:
+        counts[e["split"]] = counts.get(e["split"], 0) + 1
+    print(f"Dataset ready: {name} ({len(EXAMPLES)} examples; splits: {counts})")

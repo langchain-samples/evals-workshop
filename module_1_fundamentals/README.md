@@ -62,3 +62,14 @@ you'll live during the rest of the workshop.
 
 Once this clicks, move on to **Module 2**, where we add real deterministic
 shape checks and LLM-as-judge evaluators.
+
+---
+
+## A note on the dataset name
+
+This module's dataset is called `hr-onboarding/policy-qa/intro`, not
+"HR Workshop — Module 1". The convention is
+`{domain}/{capability}/{version_or_variant}`, and it exists for the same reason
+you namespace anything: once you have forty datasets, prose titles are
+unsearchable and slash-separated ones sort into a tree. Module 2 covers the rest
+of the dataset conventions (splits and metadata).

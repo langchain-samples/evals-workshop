@@ -16,6 +16,7 @@ that watches live traffic over time.
 | | **Offline gate** (Module 4) | **Online monitor** (this module) |
 |---|---|---|
 | Trigger | every PR / push | a schedule (cron) |
+| Shipped here as | manual-only (`workflow_dispatch`) | manual-only (`workflow_dispatch`) |
 | Data | curated dataset | recent production traces |
 | Compares to | per-metric thresholds | a baseline (drift detection) |
 | Catches | bad merges | silent production degradation |
@@ -27,7 +28,7 @@ that watches live traffic over time.
 |------|-----------------|
 | `monitor.py` | Pull the last N production traces, score them with Module 5's reference-free evals, and **exit non-zero if any metric drifted below baseline**. |
 | `baseline.json` | The committed baseline means + drift `tolerance`. Regenerate after an intentional, reviewed quality change. |
-| `../.github/workflows/online-evals.yml` | Runs the monitor on a daily schedule (and on demand); fail = alert. |
+| `../.github/workflows/online-evals.yml` | Runs the monitor on demand. The daily `schedule:` cron is **commented out** — uncomment it to arm the monitor for real. |
 
 ## Run it
 

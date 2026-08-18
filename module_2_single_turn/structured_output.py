@@ -19,9 +19,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from pydantic import BaseModel, Field
 
-from config import get_judge, require_langsmith
+from config import experiment_metadata, get_judge, require_langsmith
 from module_2_single_turn.datasets import ensure_dataset, DATASET_NAME
 from module_2_single_turn.deterministic_evals import structured_answer_is_valid
+from hr_agent.knowledge import policy_corpus, resolve_topic
 from hr_agent.tools import lookup_hr_policy
 
 
@@ -44,8 +45,11 @@ def structured_target(inputs: dict) -> dict:
     """
     question = inputs["question"]
     model = get_judge().with_structured_output(PolicyAnswer)
-    # Pull candidate policy text so the answer can be grounded.
-    context = lookup_hr_policy.invoke({"topic": question})
+    # Pull candidate policy text so the answer can be grounded. resolve_topic
+    # maps the question to a known topic key; passing the raw question here
+    # would always miss the lookup and return the "no policy found" fallback.
+    topic = resolve_topic(question)
+    context = lookup_hr_policy.invoke({"topic": topic}) if topic else policy_corpus()
     result: PolicyAnswer = model.invoke(
         f"Policy context: {context}\n\nEmployee question: {question}\n\n"
         "Answer as a PolicyAnswer."
@@ -66,6 +70,8 @@ def main() -> None:
         data=DATASET_NAME,
         evaluators=[structured_answer_is_valid],
         experiment_prefix="module-2-structured-shape",
+        metadata=experiment_metadata(module=2, suite="structured-output"),
+        description="Shape validation of structured PolicyAnswer output.",
         max_concurrency=4,
     )
     print("\nStructured-output shape experiment complete:")
