@@ -1,0 +1,97 @@
+module_5_online_evals/README.md
+  s_485947b796bc45::t_a03b83ea79ea86 91-94
+hr_agent/knowledge.py
+  s_485947b796bc45::t_51de1d5a8c836d 111-152
+module_4_ci/conftest.py
+  s_485947b796bc45::t_0c6d0976bf5c16 57-61,64-67
+  s_485947b796bc45::t_cded21181e6db4 52-56,62-63,68,73
+  s_485947b796bc45::t_985df412bd5763 38-42
+  s_485947b796bc45::t_8b7fb31c6fba2e 3-5,12,21-22,24,29-37,43-51,69-72,74
+  s_485947b796bc45::t_3dedf2a04534c5 75
+module_3_agent_evals/README.md
+  s_485947b796bc45::t_fc27295f93fd16 66-127
+README.md
+  s_485947b796bc45::t_d0f288768cf94a 41,49,65-70,109-110,116,147-178,180-194,197,203-235
+  s_485947b796bc45::t_c2ea73f27ce2a2 122-129,145-146
+  s_485947b796bc45::t_e63e49337dbabd 195-196,198-202
+module_1_fundamentals/README.md
+  s_485947b796bc45::t_3fa050dad39320 65-75
+module_3_agent_evals/mocked_eval.py
+  s_485947b796bc45::t_e1e48d8a32a856 1-82
+.gitignore
+  s_485947b796bc45::t_e673923f916eca 43
+  s_485947b796bc45::t_985df412bd5763 34-42
+requirements.txt
+  s_485947b796bc45::t_e673923f916eca 4-6
+module_2_single_turn/run_eval.py
+  s_485947b796bc45::t_6d1cc75efb8e5e 19,43-44
+module_4_ci/test_evals.py
+  s_485947b796bc45::t_9f5df63d799fc0 15-23,37-38,50-57,71-72,90-91
+module_6_improving_evals/README.md
+  s_485947b796bc45::t_7d3ac0420b5881 87-113
+  s_485947b796bc45::t_a03b83ea79ea86 34-35,43,54-86,127-129
+  s_485947b796bc45::t_a5f200e27baf31 28-30,32-33,117,119,121,124,126,134-135,137-138,140-141,144
+module_2_single_turn/datasets.py
+  s_485947b796bc45::t_b745a7c103e96f 18-19,32-33,49-50,62-63,75-76,88-89,102-108,114-118,123-134,140-143
+module_2_single_turn/structured_output.py
+  s_485947b796bc45::t_6d1cc75efb8e5e 22,25,48-52,73-74
+.github/workflows/online-evals.yml
+  s_485947b796bc45::t_e585cde61b574f 4-14,17-18
+hr_agent/agent.py
+  s_485947b796bc45::t_c798671e395c37 11-12,18-20,39-48,53,57-61,68
+module_3_agent_evals/mock_datasets.py
+  s_485947b796bc45::t_c6a02a5754d724 1-141
+module_1_fundamentals/01_first_eval.py
+  s_485947b796bc45::t_b809f68c70719c 22,26-29,40-41,46-47,52-53,65-71,77-80,116-119
+module_7_production_ci/README.md
+  s_485947b796bc45::t_d6be924b123d4b 19,31
+module_4_ci/ci_gate.py
+  s_485947b796bc45::t_0244b2c094ee4e 14-15,30,51-52,55-56,94-125,142-144,152,156,159-164,170-171
+module_3_agent_evals/run_eval.py
+  s_485947b796bc45::t_6d1cc75efb8e5e 19,52-53
+hr_agent/__init__.py
+  s_485947b796bc45::t_c798671e395c37 20-21,24-30,33-36,38
+.github/workflows/evals.yml
+  s_485947b796bc45::t_3e38d028031060 54-57,63-64,66,69-73
+  s_485947b796bc45::t_e585cde61b574f 3-17,19-22,34-35,37-42
+module_6_improving_evals/curate_dataset.py
+  s_485947b796bc45::t_a3581169b4c693 1-18,40-92,100-104,115-134,143-209,213-248,251-258
+  s_485947b796bc45::t_ee013caf25d6bd 19-39,249-250
+  s_485947b796bc45::t_ad949c863486e6 93-99,105-114
+  s_485947b796bc45::t_8fe53390348dd6 210-212
+  s_485947b796bc45::t_2fb4d50504960f 135-142
+hr_agent/mocking.py
+  s_485947b796bc45::t_7a4308d2896e34 1-177
+reset_demo.py
+  s_485947b796bc45::t_ffeab30946a1c6 1-3,24,49-58
+  s_485947b796bc45::t_f666c48d69598a 59
+module_4_ci/README.md
+  s_485947b796bc45::t_fc27295f93fd16 14-17,30-32,51-76
+  s_485947b796bc45::t_d6be924b123d4b 37-50
+  s_485947b796bc45::t_0c6d0976bf5c16 100-104,106-111,115
+  s_485947b796bc45::t_e63e49337dbabd 77-99,105,112-114,116-121
+config.py
+  s_485947b796bc45::t_db312a8a9c53ba 54-126
+module_3_agent_evals/tool_evals.py
+  s_485947b796bc45::t_e70203254aa95e 89-130,133-135,152-161
+module_3_agent_evals/datasets.py
+  s_485947b796bc45::t_a92d291c06e36d 18-19,41-42,54-55,76-77,91-92,105-111,117-118,123-130,136-139
+module_2_single_turn/README.md
+  s_485947b796bc45::t_3fa050dad39320 56-89
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "826e4ec3ac4934899c1194fbe6d558a03f815ebd",
+  "prompts": {},
+  "sessions": {
+    "s_485947b796bc45": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2334a0aa-5550-4459-93bd-8004a2b5bdf6",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Eric Johanson <eric.johanson@langchain.dev>"
+    }
+  }
+}
