@@ -39,7 +39,7 @@ EXAMPLES = [
             "forbidden_tools": ["schedule_orientation"],
         },
         "metadata": {"task_type": "multi-provision", "steps": 4, "difficulty": "medium", "source": "hand-written"},
-        "split": "test",
+        "split": "gate",
     },
     {
         "inputs": {
@@ -52,7 +52,7 @@ EXAMPLES = [
             "forbidden_tools": ["create_it_account", "provision_equipment"],
         },
         "metadata": {"task_type": "scheduling", "steps": 2, "difficulty": "easy", "source": "hand-written"},
-        "split": "test",
+        "split": "gate",
     },
     {
         "inputs": {
@@ -74,7 +74,7 @@ EXAMPLES = [
             "forbidden_tools": [],
         },
         "metadata": {"task_type": "multi-provision", "steps": 5, "difficulty": "hard", "source": "hand-written"},
-        "split": "train",
+        "split": "scratch",
     },
     {
         "inputs": {
@@ -89,7 +89,7 @@ EXAMPLES = [
             "forbidden_tools": ["create_it_account", "provision_equipment", "schedule_orientation"],
         },
         "metadata": {"task_type": "read-only", "steps": 2, "difficulty": "medium", "source": "hand-written"},
-        "split": "test",
+        "split": "gate",
     },
 ]
 

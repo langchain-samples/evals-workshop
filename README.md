@@ -107,7 +107,7 @@ python module_1_fundamentals/01_first_eval.py
 python module_2_single_turn/run_eval.py
 python module_3_agent_evals/run_eval.py
 python module_3_agent_evals/mocked_eval.py           # mocked tool failures
-python module_4_ci/ci_gate.py --suite agent --split test
+python module_4_ci/ci_gate.py --suite agent
 
 # Session 2 — production evals
 python module_5_online_evals/production_traffic.py   # create live traces
@@ -167,16 +167,55 @@ hr-onboarding/policy-qa/from-production   # Module 6 (curated)
 
 Slash-separated names sort and filter cleanly in the UI. Prose titles don't.
 
-### Splits: `test` gates, `train` is scratch
+### Splits: `gate` runs in CI, `scratch` is where you tune
 
-Every example is assigned a split. CI runs `--split test`; the `train` slice is
-where you tune prompts and few-shot judges. Tune against your gate and the gate
-stops measuring anything.
+Every example gets a split. The `scratch` slice is where you tune prompts and
+few-shot judges — tune against your gate and the gate stops measuring anything.
+
+**On the names.** Splits are free-form strings; nothing in LangSmith enforces
+any particular vocabulary. `test`/`train` is the conventional pair and it is
+borrowed from model training, which is misleading here — no model is being
+trained, and a PM asked to pick a "train" split has no idea what that means.
+`gate`/`scratch` says what the two slices are *for*. Only the holdout
+discipline matters; pick names your team reads correctly.
+
+**On the direction — this part is not cosmetic.** Filtering *to* the gated
+split looks equivalent to filtering *out* the scratch one, and it **fails
+open**: LangSmith files every example with no explicit split under the implicit
+`base` split, so each example a PM adds through the web UI is silently dropped
+from the gate. Nothing breaks, no one is told, and coverage quietly shrinks.
+Exclude scratch instead and a forgotten split becomes a false failure — loud
+and fixable — rather than a test that never ran.
 
 ```python
 client.create_examples(..., splits=[e["split"] for e in EXAMPLES])
-data = list(client.list_examples(dataset_name=NAME, splits=["test"]))
+
+# Fail-open — an example with no split assigned is invisible here:
+#   data = list(client.list_examples(dataset_name=NAME, splits=["gate"]))
+
+# Fail-safe — unassigned examples get gated:
+all_examples = list(client.list_examples(dataset_name=NAME))
+held_out = {e.id for e in client.list_examples(dataset_name=NAME, splits=["scratch"])}
+data = [e for e in all_examples if e.id not in held_out]
 ```
+
+`module_4_ci/ci_gate.py` does this and prints the accounting every run
+(total / gated / held out / unassigned), so drift shows up in the CI log.
+`--require-splits` turns "someone forgot" into a hard failure.
+
+> **Renaming splits on a dataset that already exists.** `ensure_dataset()` is
+> idempotent — it won't relabel a dataset it finds. A workspace created before
+> this rename still has `test`/`train`, which is why `ci_gate.HELD_OUT_SPLITS`
+> keeps `train` as a legacy alias: dropping it would silently start gating
+> someone's scratch examples. To actually migrate:
+>
+> ```python
+> old = list(client.list_examples(dataset_name=NAME, splits=["train"]))
+> ids = [e.id for e in old]
+> client.update_dataset_splits(dataset_name=NAME, split_name="scratch", example_ids=ids)
+> client.update_dataset_splits(dataset_name=NAME, split_name="train",
+>                              example_ids=ids, remove=True)
+> ```
 
 ### Metadata at all three levels
 
@@ -233,3 +272,39 @@ evals/
 The rule behind it: **evaluators, dataset-creation scripts, orchestration, and
 mocks live in code** (versioned, reviewed, testable). **Dataset storage,
 experiment comparison, and human feedback live in LangSmith.**
+
+### "In code" is about authorship, not about where it runs
+
+That rule is often misread as "never author an evaluator in the LangSmith UI."
+It isn't. Where an evaluator is *written* and where it *executes* are separate
+choices, and you don't have to trade one for the other:
+
+| | Offline experiments | Online evals on live traces |
+|---|---|---|
+| Evaluator authored in code | `evaluate(evaluators=[...])` — this repo | push it to a project rule (below) |
+| Evaluator authored in the UI | attach to a dataset | Tracing project → Rules → + New Rule |
+
+A code-authored evaluator can be registered server-side as a project rule
+(`POST /runs/rules` with a `code_evaluators` payload; the `langsmith-evaluator`
+skill ships an `upload_evaluators.py` that does this with `--project` and
+`--sample-rate`). So a single reviewed definition in your repo can drive both
+the pre-merge gate and sampled scoring of production traffic — you do not have
+to maintain the same logic in two places to get online evals. See
+[module 5](module_5_online_evals/).
+
+Two caveats worth knowing before you commit to either direction:
+
+- **Uploaded code evaluators are sandboxed.** They ship as a self-contained
+  function and cannot import your repo's modules, so anything with real
+  internal dependencies has to be inlined or kept UI-side. This is the honest
+  argument for authoring in the UI.
+- **UI-authored LLM judges are unversioned config.** Edit a judge prompt and
+  every historical score silently changes meaning, which quietly breaks
+  experiment-over-experiment comparison — the thing you keep experiments for.
+  If you author judges in the UI, version their prompts deliberately (Prompt
+  Hub, or an export job). That risk, not "code vs UI", is what this convention
+  is actually protecting against.
+
+The teams that get burned are the ones who end up with *drifted duplicates* —
+the same judge in a repo and in the UI, edited independently. One definition,
+either home, is the thing that matters.

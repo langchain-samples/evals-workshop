@@ -54,7 +54,7 @@ EXAMPLES = [
             "forbidden_phrases": ["successfully created", "account is ready", "all set"],
         },
         "metadata": {"scenario": "downstream-outage", "difficulty": "hard", "source": "mocked"},
-        "split": "test",
+        "split": "gate",
     },
     {
         "inputs": {
@@ -71,7 +71,7 @@ EXAMPLES = [
             "forbidden_phrases": ["ordered", "on its way"],
         },
         "metadata": {"scenario": "unknown-employee", "difficulty": "medium", "source": "mocked"},
-        "split": "test",
+        "split": "gate",
     },
     {
         "inputs": {
@@ -98,7 +98,7 @@ EXAMPLES = [
             "forbidden_phrases": ["both are ready", "everything is set up"],
         },
         "metadata": {"scenario": "partial-failure", "difficulty": "hard", "source": "mocked"},
-        "split": "test",
+        "split": "gate",
     },
 ]
 

@@ -144,7 +144,10 @@ def main() -> None:
     parser.add_argument("--project", default=PRODUCTION_PROJECT)
     parser.add_argument("--dataset", default=DATASET_NAME, help="Target dataset name.")
     parser.add_argument("--limit", type=int, default=50, help="Recent traces to consider.")
-    parser.add_argument("--split", default="test", help="Split to file the new examples under.")
+    parser.add_argument("--split", default="gate",
+                        help="Split to file the new examples under. Defaults to the gated "
+                             "split: a trace your online evals flagged is a real failure, "
+                             "so it should regression-test forever.")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--flagged", action="store_const", const="flagged", dest="mode",
                        help="(default) traces an online eval scored below 1.")

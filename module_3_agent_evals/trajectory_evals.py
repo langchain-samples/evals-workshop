@@ -12,6 +12,12 @@ Four complementary lenses, because "right path" means different things:
 
 The target (run_eval.py) must put the agent's trajectory under
 outputs["trajectory"] — a list of tool-name strings.
+
+**Scope: one agent run.** Every example here is a single user message, so a
+trajectory is the tool calls inside *one turn* (multi-step, single-turn) — not
+a conversation thread. That matters, because these four evaluators are written
+for that scope and do not all survive being pointed at a whole thread. See
+`required_tools_used` for the one that bites.
 """
 
 from __future__ import annotations
@@ -34,6 +40,20 @@ def required_tools_used(outputs: dict, reference_outputs: dict) -> dict:
 
     Fractional: fraction of required tools that appeared. More forgiving than
     exact match — good for tasks where order doesn't strictly matter.
+
+    This is a **task-completion** metric, not a safety precondition — and the
+    difference is easy to miss once you go multi-turn. "Was this tool called at
+    least once somewhere?" is the right question for "did the work get done".
+    It is the wrong question for "was every risky claim licensed by a fresh
+    lookup": an agent that calls the lookup in turn 1 and then makes three
+    unbacked assertions in turns 2-4 scores a perfect 1.0 here.
+
+    For a precondition, you want a *conditional, per-turn* check instead — the
+    shape of `no_forbidden_tools` (hard fail on one violation) combined with
+    the trigger condition in `tool_evals.correct_employee_id` (only applies
+    when the risky action actually occurred). The structural fix is to make the
+    eval example *be* a turn, with prior messages as input context, so the run
+    boundary and the assertion boundary are the same thing.
     """
     actual = set(outputs.get("trajectory", []))
     required = reference_outputs.get("required_tools", [])

@@ -27,9 +27,9 @@ a single LLM-judge call can be noisy but the mean is stable.
 pytest module_4_ci/test_evals.py -v --langsmith-output
 
 # Aggregate gates (exit non-zero on regression)
-python module_4_ci/ci_gate.py --suite single_turn --split test
-python module_4_ci/ci_gate.py --suite agent --split test
-python module_4_ci/ci_gate.py --suite tool_failures --split test
+python module_4_ci/ci_gate.py --suite single_turn
+python module_4_ci/ci_gate.py --suite agent
+python module_4_ci/ci_gate.py --suite tool_failures
 ```
 
 ## The GitHub Actions workflow
@@ -62,13 +62,43 @@ happens differs by gate, and it's a common trip-up:
 > it does nothing for experiments created by `client.evaluate` — those need
 > `metadata=` passed explicitly. See `config.experiment_metadata()`.
 
-## Splits: gate on `test` only
+## Splits: exclude `scratch`, don't include `gate`
 
-Both gates run against the `test` split. The `train` examples exist so you can
-tune prompts and few-shot judges without tuning against your own gate.
+Both gates run against **every example except the held-out splits**
+(`scratch`). The `scratch` slice exists so you can tune prompts and few-shot
+judges without tuning against your own gate.
+
+Note the direction — it is the whole point. The obvious version of this is
+`--split gate`, and it is a **fail-open** gate: LangSmith puts every example
+with no explicit split into the implicit `base` split, so each example a
+teammate adds through the web UI is silently dropped from the run. The gate
+keeps passing while its coverage shrinks, which is the worst way for a gate to
+fail, because it is indistinguishable from health.
+
+Excluding scratch instead means a forgotten split shows up as a *false failure*
+— loud and fixable — rather than a *missed test*.
 
 ```bash
-python module_4_ci/ci_gate.py --suite single_turn --split test
+# Default: gate everything except `scratch`; unassigned examples are gated.
+python module_4_ci/ci_gate.py --suite single_turn
+
+# Hard-fail if anyone left an example without a split.
+python module_4_ci/ci_gate.py --suite single_turn --require-splits
+
+# More held-out splits.
+python module_4_ci/ci_gate.py --suite single_turn --held-out scratch --held-out wip
+
+# Narrow to one split on purpose (opt-in; skips everything else).
+python module_4_ci/ci_gate.py --suite single_turn --split gate
+```
+
+Every run prints its accounting, so coverage drift is visible in the CI log:
+
+```
+Dataset 'hr-onboarding/policy-qa/v1': 8 examples — 7 gated, 1 held out (scratch),
+2 with no split assigned.
+  note: 2 example(s) have no split assigned, so LangSmith put them in 'base'.
+        They ARE being gated — assign them a split to be explicit.
 ```
 
 ## Response caching: fast locally, off in CI

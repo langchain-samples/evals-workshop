@@ -8,11 +8,16 @@ This is the "aggregate gate" pattern: one pass/fail signal for the whole
 dataset per metric. (The pytest approach in test_evals.py is the
 "per-example gate" alternative — see the README for when to use which.)
 
+By default the gate runs on every example EXCEPT the held-out (scratch) splits,
+so an example nobody assigned a split to still gets gated. See resolve_data.
+
 Usage:
     python module_4_ci/ci_gate.py --suite single_turn
     python module_4_ci/ci_gate.py --suite agent
     python module_4_ci/ci_gate.py --suite tool_failures
-    python module_4_ci/ci_gate.py --suite single_turn --split test
+    python module_4_ci/ci_gate.py --suite single_turn --require-splits
+    python module_4_ci/ci_gate.py --suite single_turn --held-out scratch --held-out wip
+    python module_4_ci/ci_gate.py --suite single_turn --split gate   # opt-in, narrower
     python module_4_ci/ci_gate.py --suite single_turn --threshold 0.9
 """
 
@@ -53,6 +58,20 @@ THRESHOLDS: dict[str, float] = {
 }
 
 SUITES = ("single_turn", "agent", "tool_failures")
+
+# Splits deliberately kept OUT of the gate — scratch space for tuning prompts
+# and few-shot judges. Tune against the gate and the gate stops measuring
+# anything. Everything not named here is gated, INCLUDING examples with no
+# split assigned; see resolve_data for why that direction matters.
+#
+# `train` is a legacy alias. These labels are free-form strings — nothing in
+# LangSmith enforces them — and this repo renamed test/train to gate/scratch
+# because no model is being trained here. But `ensure_dataset()` is idempotent
+# and won't relabel a dataset that already exists, so a workspace created
+# before the rename still has examples in `train`. Dropping it from this tuple
+# would silently start gating someone's scratch examples. Listing a split that
+# doesn't exist on a dataset is a no-op.
+HELD_OUT_SPLITS: tuple[str, ...] = ("scratch", "train")
 
 
 def build_suite(suite: str):
@@ -107,22 +126,97 @@ def build_suite(suite: str):
     raise SystemExit(f"Unknown suite '{suite}'. Choose one of: {', '.join(SUITES)}.")
 
 
-def resolve_data(client: Client, dataset_name: str, split: str | None):
-    """What to pass as `evaluate(data=...)`: the whole dataset, or one split.
+def _assigned_splits(example) -> list[str]:
+    """The splits an example explicitly belongs to.
 
-    Running the gate on the `test` split keeps `train` examples free for tuning
-    prompts and few-shot judges — tune against the gate and the gate stops
-    measuring anything.
+    LangSmith surfaces membership under ``metadata["dataset_split"]``; an
+    example nobody assigned comes back as ``["base"]`` (the implicit default),
+    which is what we treat as *unassigned*. Best-effort — used only for the
+    accounting line, never for deciding what gets gated.
     """
-    if not split:
-        return dataset_name
-    examples = list(client.list_examples(dataset_name=dataset_name, splits=[split]))
-    if not examples:
+    metadata = getattr(example, "metadata", None) or {}
+    raw = metadata.get("dataset_split") or []
+    if isinstance(raw, str):
+        raw = [raw]
+    return [s for s in raw if s != "base"]
+
+
+def resolve_data(
+    client: Client,
+    dataset_name: str,
+    *,
+    only_split: str | None = None,
+    held_out: tuple[str, ...] = HELD_OUT_SPLITS,
+    require_splits: bool = False,
+):
+    """Pick the examples the gate runs on. Returns (examples, scope_label).
+
+    Two modes:
+
+    - ``only_split="gate"`` — evaluate exactly that split, nothing else.
+    - default — evaluate *everything except* the ``held_out`` splits.
+
+    The default is an **exclusion, not an inclusion**, and that is the whole
+    point. LangSmith drops every example with no explicit split into the
+    implicit ``base`` split. Gate on ``splits=["gate"]`` and each example a
+    teammate adds through the web UI lands in ``base`` and is silently skipped
+    — the gate keeps passing while its coverage quietly shrinks, which is the
+    worst failure mode a gate has, because it looks exactly like health.
+
+    Inverting it makes a forgotten split a *false failure* (loud, fixable)
+    instead of a *missed test* (invisible).
+    """
+    if only_split:
+        examples = list(client.list_examples(dataset_name=dataset_name, splits=[only_split]))
+        if not examples:
+            raise SystemExit(
+                f"No examples in split '{only_split}' of dataset '{dataset_name}'. "
+                "Re-run the module's datasets.py, or drop --split."
+            )
+        return examples, f"split: {only_split}"
+
+    all_examples = list(client.list_examples(dataset_name=dataset_name))
+    if not all_examples:
         raise SystemExit(
-            f"No examples in split '{split}' of dataset '{dataset_name}'. "
-            "Re-run the module's datasets.py, or drop --split."
+            f"Dataset '{dataset_name}' has no examples. Run the module's datasets.py first."
         )
-    return examples
+
+    # Ask the server which examples are held out — authoritative, and immune to
+    # however split membership happens to be shaped on the example payload.
+    held_ids: set = set()
+    for name in held_out:
+        try:
+            held_ids |= {
+                ex.id for ex in client.list_examples(dataset_name=dataset_name, splits=[name])
+            }
+        except Exception:
+            continue  # that split doesn't exist on this dataset — nothing to hold out
+
+    gated = [ex for ex in all_examples if ex.id not in held_ids]
+    unassigned = [ex for ex in all_examples if not _assigned_splits(ex)]
+
+    held_label = ", ".join(held_out) or "nothing"
+    print(
+        f"Dataset '{dataset_name}': {len(all_examples)} examples — "
+        f"{len(gated)} gated, {len(held_ids)} held out ({held_label}), "
+        f"{len(unassigned)} with no split assigned."
+    )
+
+    if unassigned:
+        note = (
+            f"{len(unassigned)} example(s) have no split assigned, so LangSmith put them "
+            f"in 'base'. They ARE being gated — assign them a split to be explicit."
+        )
+        if require_splits:
+            raise SystemExit(f"GATE CONFIG ERROR — {note}")
+        print(f"  note: {note}")
+
+    if not gated:
+        raise SystemExit(
+            f"Every example in '{dataset_name}' is held out ({held_label}). Nothing to gate."
+        )
+
+    return gated, f"all except {held_label}"
 
 
 def aggregate_scores(results) -> dict[str, float]:
@@ -141,15 +235,29 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Run an eval suite as a CI gate.")
     parser.add_argument("--suite", choices=list(SUITES), required=True)
     parser.add_argument("--split", default=None,
-                        help="Only evaluate this dataset split (e.g. 'test'). Default: all.")
+                        help="Evaluate ONLY this split. Opt-in; skips everything else, "
+                             "including examples with no split assigned.")
+    parser.add_argument("--held-out", action="append", default=None, metavar="SPLIT",
+                        help=f"Split to keep out of the gate (repeatable). "
+                             f"Default: {', '.join(HELD_OUT_SPLITS)}.")
+    parser.add_argument("--require-splits", action="store_true",
+                        help="Fail the gate if any example has no split assigned.")
     parser.add_argument("--threshold", type=float, default=None,
                         help="Override: apply this single threshold to every metric.")
     args = parser.parse_args()
 
+    held_out = tuple(s.strip() for s in (args.held_out or HELD_OUT_SPLITS) if s.strip())
+
     require_langsmith()
     client = Client()
     target, dataset_name, evaluators = build_suite(args.suite)
-    data = resolve_data(client, dataset_name, args.split)
+    data, scope_label = resolve_data(
+        client,
+        dataset_name,
+        only_split=args.split,
+        held_out=held_out,
+        require_splits=args.require_splits,
+    )
 
     results = client.evaluate(
         target,
@@ -159,16 +267,18 @@ def main() -> None:
         # This is what actually ties an experiment to a commit. The
         # LANGSMITH_EXPERIMENT env var only affects the pytest plugin, not
         # client.evaluate — see config.experiment_metadata.
-        metadata=experiment_metadata(suite=args.suite, split=args.split or "all", gate=True),
-        description=f"CI gate for the '{args.suite}' suite"
-                    + (f" (split: {args.split})." if args.split else "."),
+        metadata=experiment_metadata(
+            suite=args.suite,
+            split=args.split or f"all-except:{'+'.join(held_out)}",
+            gate=True,
+        ),
+        description=f"CI gate for the '{args.suite}' suite ({scope_label}).",
         max_concurrency=4,
     )
 
     means = aggregate_scores(results)
 
-    scope = f"{args.suite}" + (f" [split: {args.split}]" if args.split else "")
-    print(f"\n=== CI gate: {scope} ===")
+    print(f"\n=== CI gate: {args.suite} [{scope_label}] ===")
     failures: list[str] = []
     for metric in sorted(means):
         mean = means[metric]

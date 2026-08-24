@@ -38,19 +38,19 @@ EXAMPLES = [
         "inputs": {"question": "How many vacation days do new employees get?"},
         "outputs": {"expected_fact": "15"},
         "metadata": {"policy_topic": "vacation", "difficulty": "easy"},
-        "split": "test",
+        "split": "gate",
     },
     {
         "inputs": {"question": "How many paid sick days are there per year?"},
         "outputs": {"expected_fact": "10"},
         "metadata": {"policy_topic": "sick_leave", "difficulty": "easy"},
-        "split": "test",
+        "split": "gate",
     },
     {
         "inputs": {"question": "What is the 401(k) match?"},
         "outputs": {"expected_fact": "4%"},
         "metadata": {"policy_topic": "401k", "difficulty": "easy"},
-        "split": "train",
+        "split": "scratch",
     },
 ]
 
