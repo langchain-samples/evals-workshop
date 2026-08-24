@@ -68,7 +68,7 @@ client.create_dataset(
 client.create_examples(
     inputs=[...], outputs=[...],
     metadata=[{"policy_topic": "vacation", "difficulty": "easy"}, ...],
-    splits=["test", "test", "test", "train", "train"],
+    splits=["gate", "gate", "gate", "scratch", "scratch"],
 )
 ```
 
@@ -82,8 +82,12 @@ client.create_examples(
 Run a suite against one split:
 
 ```python
-data = list(client.list_examples(dataset_name=DATASET_NAME, splits=["test"]))
+data = list(client.list_examples(dataset_name=DATASET_NAME, splits=["gate"]))
 client.evaluate(target, data=data, ...)
 ```
 
-`examples_for_split(client, "test")` in `datasets.py` wraps that.
+`examples_for_split(client, "gate")` in `datasets.py` wraps that.
+
+> Note this is the *fail-open* direction — fine for slicing a dataset by hand,
+> wrong for a CI gate, where an example with no split assigned would be
+> silently skipped. See [module 4](../module_4_ci/) and the top-level README.

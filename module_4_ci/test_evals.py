@@ -15,10 +15,10 @@ as hard per-example asserts, because a single judge call can be noisy.
 
 Two things conftest.py sets up for these tests:
   - **Split filtering.** Everything runs here EXCEPT the held-out splits
-    (`train`), which are scratch space for tuning prompts and judges — gating
-    on them would mean tuning against your own gate. Note the direction: we
-    exclude scratch rather than include `test`, so an example nobody assigned a
-    split to still gets gated. See `ci_gate.resolve_data` for why.
+    (`scratch`), which are space for tuning prompts and judges — gating on them
+    would mean tuning against your own gate. Note the direction: we exclude
+    scratch rather than include `gate`, so an example nobody assigned a split
+    to still gets gated. See `ci_gate.resolve_data` for why.
   - **Response caching.** Locally, model API calls are recorded to
     `fixtures/cassettes/` and replayed, so re-running is fast and free. In CI
     (`CI=true`) caching is off — a gate replaying stale responses can't detect a

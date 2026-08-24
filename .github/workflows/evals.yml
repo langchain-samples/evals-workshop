@@ -60,11 +60,12 @@ jobs:
         run: pytest module_4_ci/test_evals.py -v --langsmith-output
 
       # --- Aggregate gate: dataset-level thresholds per metric ---
-      # The gate runs on every example EXCEPT the held-out `train` split, so
+      # The gate runs on every example EXCEPT the held-out `scratch` split, so
       # prompts and few-shot judges can be tuned without tuning against the gate
-      # itself. Deliberately NOT `--split test`: LangSmith files any example
-      # with no explicit split under `base`, so gating on `test` would silently
-      # skip everything added through the web UI. Excluding scratch fails safe.
+      # itself. Deliberately NOT `--split gate`: LangSmith files any example
+      # with no explicit split under `base`, so gating on one named split would
+      # silently skip everything added through the web UI. Excluding scratch
+      # fails safe.
       # Drop --require-splits if you'd rather have a warning than a hard failure.
       - name: Single-turn aggregate gate
         run: python module_4_ci/ci_gate.py --suite single_turn --require-splits

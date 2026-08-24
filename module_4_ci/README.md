@@ -62,14 +62,14 @@ happens differs by gate, and it's a common trip-up:
 > it does nothing for experiments created by `client.evaluate` — those need
 > `metadata=` passed explicitly. See `config.experiment_metadata()`.
 
-## Splits: exclude scratch, don't include `test`
+## Splits: exclude `scratch`, don't include `gate`
 
-Both gates run against **every example except the held-out splits** (`train`).
-The `train` slice exists so you can tune prompts and few-shot judges without
-tuning against your own gate.
+Both gates run against **every example except the held-out splits**
+(`scratch`). The `scratch` slice exists so you can tune prompts and few-shot
+judges without tuning against your own gate.
 
 Note the direction — it is the whole point. The obvious version of this is
-`--split test`, and it is a **fail-open** gate: LangSmith puts every example
+`--split gate`, and it is a **fail-open** gate: LangSmith puts every example
 with no explicit split into the implicit `base` split, so each example a
 teammate adds through the web UI is silently dropped from the run. The gate
 keeps passing while its coverage shrinks, which is the worst way for a gate to
@@ -79,23 +79,23 @@ Excluding scratch instead means a forgotten split shows up as a *false failure*
 — loud and fixable — rather than a *missed test*.
 
 ```bash
-# Default: gate everything except `train`; unassigned examples are gated.
+# Default: gate everything except `scratch`; unassigned examples are gated.
 python module_4_ci/ci_gate.py --suite single_turn
 
 # Hard-fail if anyone left an example without a split.
 python module_4_ci/ci_gate.py --suite single_turn --require-splits
 
-# More scratch splits.
-python module_4_ci/ci_gate.py --suite single_turn --held-out train --held-out wip
+# More held-out splits.
+python module_4_ci/ci_gate.py --suite single_turn --held-out scratch --held-out wip
 
 # Narrow to one split on purpose (opt-in; skips everything else).
-python module_4_ci/ci_gate.py --suite single_turn --split test
+python module_4_ci/ci_gate.py --suite single_turn --split gate
 ```
 
 Every run prints its accounting, so coverage drift is visible in the CI log:
 
 ```
-Dataset 'hr-onboarding/policy-qa/v1': 8 examples — 7 gated, 1 held out (train),
+Dataset 'hr-onboarding/policy-qa/v1': 8 examples — 7 gated, 1 held out (scratch),
 2 with no split assigned.
   note: 2 example(s) have no split assigned, so LangSmith put them in 'base'.
         They ARE being gated — assign them a split to be explicit.

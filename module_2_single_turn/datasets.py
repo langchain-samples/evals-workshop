@@ -30,7 +30,7 @@ EXAMPLES = [
             ),
         },
         "metadata": {"policy_topic": "vacation", "difficulty": "easy", "source": "hand-written"},
-        "split": "test",
+        "split": "gate",
     },
     {
         "inputs": {"question": "When does my health insurance start?"},
@@ -47,7 +47,7 @@ EXAMPLES = [
             ),
         },
         "metadata": {"policy_topic": "health_insurance", "difficulty": "medium", "source": "hand-written"},
-        "split": "test",
+        "split": "gate",
     },
     {
         "inputs": {"question": "What's the 401k match and when am I eligible?"},
@@ -60,7 +60,7 @@ EXAMPLES = [
             ),
         },
         "metadata": {"policy_topic": "401k", "difficulty": "medium", "source": "hand-written"},
-        "split": "test",
+        "split": "gate",
     },
     {
         "inputs": {"question": "Can I work from home?"},
@@ -73,7 +73,7 @@ EXAMPLES = [
             ),
         },
         "metadata": {"policy_topic": "remote_work", "difficulty": "hard", "source": "hand-written"},
-        "split": "train",
+        "split": "scratch",
     },
     {
         "inputs": {"question": "How long do I have to submit an expense report, and do I need receipts?"},
@@ -86,7 +86,7 @@ EXAMPLES = [
             ),
         },
         "metadata": {"policy_topic": "expenses", "difficulty": "medium", "source": "hand-written"},
-        "split": "train",
+        "split": "scratch",
     },
 ]
 
@@ -123,7 +123,7 @@ def ensure_dataset(client: Client | None = None) -> str:
 def examples_for_split(client: Client, split: str | None = None):
     """Return the examples in one split — what you pass to `evaluate(data=...)`.
 
-    ``client.evaluate(target, data=examples_for_split(client, "test"))`` runs the
+    ``client.evaluate(target, data=examples_for_split(client, "gate"))`` runs the
     experiment over just that slice. Pass ``None`` for the whole dataset.
     """
     ensure_dataset(client)

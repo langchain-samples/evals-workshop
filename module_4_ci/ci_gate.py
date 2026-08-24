@@ -16,8 +16,8 @@ Usage:
     python module_4_ci/ci_gate.py --suite agent
     python module_4_ci/ci_gate.py --suite tool_failures
     python module_4_ci/ci_gate.py --suite single_turn --require-splits
-    python module_4_ci/ci_gate.py --suite single_turn --held-out train --held-out wip
-    python module_4_ci/ci_gate.py --suite single_turn --split test   # opt-in, narrower
+    python module_4_ci/ci_gate.py --suite single_turn --held-out scratch --held-out wip
+    python module_4_ci/ci_gate.py --suite single_turn --split gate   # opt-in, narrower
     python module_4_ci/ci_gate.py --suite single_turn --threshold 0.9
 """
 
@@ -63,7 +63,15 @@ SUITES = ("single_turn", "agent", "tool_failures")
 # and few-shot judges. Tune against the gate and the gate stops measuring
 # anything. Everything not named here is gated, INCLUDING examples with no
 # split assigned; see resolve_data for why that direction matters.
-HELD_OUT_SPLITS: tuple[str, ...] = ("train",)
+#
+# `train` is a legacy alias. These labels are free-form strings — nothing in
+# LangSmith enforces them — and this repo renamed test/train to gate/scratch
+# because no model is being trained here. But `ensure_dataset()` is idempotent
+# and won't relabel a dataset that already exists, so a workspace created
+# before the rename still has examples in `train`. Dropping it from this tuple
+# would silently start gating someone's scratch examples. Listing a split that
+# doesn't exist on a dataset is a no-op.
+HELD_OUT_SPLITS: tuple[str, ...] = ("scratch", "train")
 
 
 def build_suite(suite: str):
@@ -145,12 +153,12 @@ def resolve_data(
 
     Two modes:
 
-    - ``only_split="test"`` — evaluate exactly that split, nothing else.
+    - ``only_split="gate"`` — evaluate exactly that split, nothing else.
     - default — evaluate *everything except* the ``held_out`` splits.
 
     The default is an **exclusion, not an inclusion**, and that is the whole
     point. LangSmith drops every example with no explicit split into the
-    implicit ``base`` split. Gate on ``splits=["test"]`` and each example a
+    implicit ``base`` split. Gate on ``splits=["gate"]`` and each example a
     teammate adds through the web UI lands in ``base`` and is silently skipped
     — the gate keeps passing while its coverage quietly shrinks, which is the
     worst failure mode a gate has, because it looks exactly like health.
