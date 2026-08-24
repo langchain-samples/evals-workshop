@@ -1,0 +1,37 @@
+module_4_ci/README.md
+  s_c869c2e6179d0f::t_dcf94c9420c21c 30-32,65-76,78-79,82-91,95-102
+  s_c869c2e6179d0f::t_6192dbd16921f4 103
+module_4_ci/test_evals.py
+  s_c869c2e6179d0f::t_dcf94c9420c21c 17-21,51,53-61
+README.md
+  s_c869c2e6179d0f::t_402f10ec64a563 110,170,172-181,185-192,195-201
+  s_c869c2e6179d0f::t_db2e7cd467b6b3 202
+hr_agent/trajectory.py
+  s_c869c2e6179d0f::t_2af67583a97bdc 7-13
+.github/workflows/evals.yml
+  s_c869c2e6179d0f::t_402f10ec64a563 63-68,70,73,77
+module_4_ci/ci_gate.py
+  s_c869c2e6179d0f::t_65241fb276634b 11-13,18-20,62-66,230-236,241-242,246-252,262-267,273
+  s_c869c2e6179d0f::t_1c3105d375fbcd 121-122,124-127,129-206,208,210-211
+  s_c869c2e6179d0f::t_eea73461de6002 67
+module_3_agent_evals/trajectory_evals.py
+  s_c869c2e6179d0f::t_2af67583a97bdc 15-20,43-56
+module_3_agent_evals/README.md
+  s_c869c2e6179d0f::t_0241b58cd948c5 11-42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "197ff4e1969284118fb922b35aeff640b73d866c",
+  "prompts": {},
+  "sessions": {
+    "s_c869c2e6179d0f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "99241de3-8828-44ab-bbd2-d23839eee69c",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Eric Johanson <eric.johanson@langchain.dev>"
+    }
+  }
+}
