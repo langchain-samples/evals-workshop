@@ -4,6 +4,13 @@ create_agent returns ``{"messages": [...]}``. The "trajectory" is the ordered
 sequence of tool calls the model made along the way. We read it from the
 AIMessages' ``tool_calls`` field. Module 3 evaluators compare this against an
 expected trajectory.
+
+**Scope: one agent run, not a conversation.** ``run_agent`` invokes the agent
+with a single user message, so a trajectory here spans the internal steps of
+*one turn* — multi-step, single-turn. It is not a multi-turn thread. If you
+extend this to real conversations, decide deliberately whether each evaluator
+should score a turn or the whole thread; see the note in
+``module_3_agent_evals/trajectory_evals.py``.
 """
 
 from __future__ import annotations

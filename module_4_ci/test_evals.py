@@ -14,9 +14,11 @@ metrics are better tracked as trends via the aggregate gate (ci_gate.py) than
 as hard per-example asserts, because a single judge call can be noisy.
 
 Two things conftest.py sets up for these tests:
-  - **Split filtering.** Only the `test` split runs here. The `train` examples
-    are scratch space for tuning prompts and judges; gating on them would mean
-    tuning against your own gate.
+  - **Split filtering.** Everything runs here EXCEPT the held-out splits
+    (`train`), which are scratch space for tuning prompts and judges — gating
+    on them would mean tuning against your own gate. Note the direction: we
+    exclude scratch rather than include `test`, so an example nobody assigned a
+    split to still gets gated. See `ci_gate.resolve_data` for why.
   - **Response caching.** Locally, model API calls are recorded to
     `fixtures/cassettes/` and replayed, so re-running is fast and free. In CI
     (`CI=true`) caching is off — a gate replaying stale responses can't detect a
@@ -46,11 +48,17 @@ from module_2_single_turn.deterministic_evals import (
 from module_3_agent_evals.datasets import EXAMPLES as AGENT_EXAMPLES
 from module_3_agent_evals.tool_evals import correct_employee_id
 from module_3_agent_evals.trajectory_evals import no_forbidden_tools, required_tools_used
+from module_4_ci.ci_gate import HELD_OUT_SPLITS
 
-# Gate on the `test` split only — see the module docstring.
-GATED_SPLIT = "test"
-SINGLE_TURN_GATED = [e for e in SINGLE_TURN_EXAMPLES if e.get("split") == GATED_SPLIT]
-AGENT_GATED = [e for e in AGENT_EXAMPLES if e.get("split") == GATED_SPLIT]
+# Gate on everything except the held-out splits — see the module docstring.
+# `e.get("split")` is None for an example that never declared one; None is not
+# in HELD_OUT_SPLITS, so it gets gated rather than silently skipped.
+def _gated(examples: list[dict]) -> list[dict]:
+    return [e for e in examples if e.get("split") not in HELD_OUT_SPLITS]
+
+
+SINGLE_TURN_GATED = _gated(SINGLE_TURN_EXAMPLES)
+AGENT_GATED = _gated(AGENT_EXAMPLES)
 
 # Tag the pytest experiment with commit/branch/model, same as the aggregate gate.
 LS_MARK = {**CACHE_MARK, "experiment_metadata": experiment_metadata(suite="ci-pytest")}

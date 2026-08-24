@@ -107,7 +107,7 @@ python module_1_fundamentals/01_first_eval.py
 python module_2_single_turn/run_eval.py
 python module_3_agent_evals/run_eval.py
 python module_3_agent_evals/mocked_eval.py           # mocked tool failures
-python module_4_ci/ci_gate.py --suite agent --split test
+python module_4_ci/ci_gate.py --suite agent
 
 # Session 2 — production evals
 python module_5_online_evals/production_traffic.py   # create live traces
@@ -167,16 +167,38 @@ hr-onboarding/policy-qa/from-production   # Module 6 (curated)
 
 Slash-separated names sort and filter cleanly in the UI. Prose titles don't.
 
-### Splits: `test` gates, `train` is scratch
+### Splits: hold out scratch, gate everything else
 
-Every example is assigned a split. CI runs `--split test`; the `train` slice is
-where you tune prompts and few-shot judges. Tune against your gate and the gate
-stops measuring anything.
+Every example gets a split. The `train` slice is where you tune prompts and
+few-shot judges — tune against your gate and the gate stops measuring anything.
+
+The subtlety is which direction you filter. Gating on `splits=["test"]` looks
+equivalent and **fails open**: LangSmith files every example with no explicit
+split under the implicit `base` split, so each example a PM adds through the
+web UI is silently dropped from the gate. Nothing breaks, no one is told, and
+coverage quietly shrinks. Gate on *everything except scratch* instead and a
+forgotten split becomes a false failure — loud and fixable — rather than a test
+that never ran.
 
 ```python
 client.create_examples(..., splits=[e["split"] for e in EXAMPLES])
-data = list(client.list_examples(dataset_name=NAME, splits=["test"]))
+
+# Fail-open — an example with no split assigned is invisible here:
+#   data = list(client.list_examples(dataset_name=NAME, splits=["test"]))
+
+# Fail-safe — unassigned examples get gated:
+all_examples = list(client.list_examples(dataset_name=NAME))
+held_out = {e.id for e in client.list_examples(dataset_name=NAME, splits=["train"])}
+data = [e for e in all_examples if e.id not in held_out]
 ```
+
+`module_4_ci/ci_gate.py` does this and prints the accounting every run
+(total / gated / held out / unassigned), so drift shows up in the CI log.
+`--require-splits` turns "someone forgot" into a hard failure.
+
+The names are just strings — nothing in LangSmith enforces `test`/`train`, and
+no model is being trained here. `gate`/`scratch` reads better if the ML
+vocabulary confuses your team; only the holdout discipline matters.
 
 ### Metadata at all three levels
 

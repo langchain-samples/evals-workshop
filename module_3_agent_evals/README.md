@@ -8,6 +8,38 @@ destructive tool it shouldn't have, looked up the wrong employee, or took ten
 steps to do a two-step job. Agent evals catch these. They're what separates
 "the demo worked" from "this is safe to ship."
 
+## Scope: a trajectory here is one agent run, not a conversation
+
+Worth pinning down before anything else, because it is the most common misread
+of this module. Every example in `datasets.py` is a **single user message**, and
+`run_agent` does one `agent.invoke`. So "trajectory" means the ordered tool
+calls *inside one turn* — multi-**step**, single-**turn**. There is no
+multi-turn thread anywhere in this workshop.
+
+The distinction matters the moment you take these evaluators to a real
+conversational agent, because the four below do not all mean the same thing at
+thread scope:
+
+| Evaluator | At turn scope (here) | Pointed at a whole thread |
+|---|---|---|
+| `trajectory_exact_match` | strict path check | almost always 0 — threads don't repeat |
+| `required_tools_used` | did this turn do the work? | **quietly weaker** — one call anywhere satisfies it forever |
+| `no_forbidden_tools` | did this turn stay safe? | still meaningful; one violation anywhere fails |
+| `trajectory_efficiency` | wasted steps this turn | conflates turns; needs per-turn normalising |
+
+`required_tools_used` is the one that bites. It is a **task-completion** metric,
+not a safety precondition. If your rule is "the agent must call
+`get_certifications` before *any* risky claim", a set-membership check over a
+thread passes an agent that looked things up in turn 1 and then improvised
+through turns 2–4. For a precondition you want a *conditional, per-turn* check
+— the hard-fail shape of `no_forbidden_tools` plus the trigger condition in
+`tool_evals.correct_employee_id`, which only applies when the risky action
+actually happened.
+
+The structural fix, if you go multi-turn: make each eval example **be a turn**,
+with the prior messages as input context. Then the run boundary and the
+assertion boundary are the same thing and the question stops arising.
+
 ## Three things to evaluate about a trajectory
 
 | Lens | Question | Evaluators |
