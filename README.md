@@ -19,9 +19,23 @@ The workshop runs in two sessions:
 
 ## Who this is for
 
-Development teams meeting evaluations for the first time. We start with
-concepts and build up. No prior eval experience assumed; basic Python and
-comfort with the command line is enough.
+Teams at different stages, in the same room: some who run evals daily, some who
+are just starting. Modules 1–2 are the shared vocabulary — quick if you know it,
+essential if you don't. Everything after that is where experienced teams spend
+their time. Basic Python and comfort with the command line is enough; no prior eval
+experience is assumed.
+
+### Where to start
+
+You don't have to read in order. Pick the row that sounds like your problem:
+
+| If you… | Start with | Then |
+|---|---|---|
+| are new to evals | [Module 1](module_1_fundamentals/) | in order |
+| have datasets whose **ground truth goes stale** because the underlying data keeps changing | [Module 3 → stale data](module_3_agent_evals/README.md#stale-data-when-the-world-changes-under-your-ground-truth) | [Module 4](module_4_ci/) to gate on it |
+| reach for an **LLM judge** by default | [Choosing an evaluator](module_2_single_turn/choosing-an-evaluator.md) | [Module 6](module_6_improving_evals/) to validate the ones you keep |
+| have **agents in production** and want to see what they're doing | [Module 5 → Trajectory view](module_5_online_evals/README.md#reading-production-sessions-the-trajectory-view) | [Module 6 → Engine](module_6_improving_evals/README.md#engine-the-same-loop-automated) |
+| are **wiring evals into CI** | [Module 4](module_4_ci/) | [Module 7](module_7_production_ci/) for scheduled monitoring |
 
 ## The arc
 
@@ -37,16 +51,16 @@ Fundamentals  ->  Single-turn evals -> Agent evals  ->  Evals in   │  Online e
 | Module | You learn to… | Evaluators introduced |
 |--------|---------------|------------------------|
 | **[1 — Fundamentals](module_1_fundamentals/)** | Name the 4 parts of any eval; run one end-to-end. | first deterministic check |
-| **[2 — Single-turn](module_2_single_turn/)** | Judge a single answer. | deterministic (facts, **shape validation**) + LLM-judge (correctness, groundedness, tone) |
-| **[3 — Agent evals](module_3_agent_evals/)** | Judge the *trajectory* and tool calls, not just the answer. Mock tool outputs to reach failure states. | trajectory (exact / required / forbidden / efficiency), tool-args, LLM trajectory judge, **failure handling** |
+| **[2 — Single-turn](module_2_single_turn/)** | Judge a single answer, and **decide when a judge is warranted at all**. | deterministic (facts, **shape validation**) + LLM-judge (correctness, groundedness, tone) + a [decision ladder](module_2_single_turn/choosing-an-evaluator.md) |
+| **[3 — Agent evals](module_3_agent_evals/)** | Judge the *trajectory* and tool calls, not just the answer. Mock tool outputs to reach failure states. **Replay recorded tool outputs when the data changes under your ground truth.** | trajectory (exact / required / forbidden / efficiency), tool-args, LLM trajectory judge, **failure handling**, **point-in-time replay + invariants** |
 | **[4 — CI](module_4_ci/)** | Gate a build on eval results. | pytest per-example gate + aggregate threshold gate + GitHub Actions |
 
 ### Session 2 — Evals for Production
 
 | Module | You learn to… | What's new |
 |--------|---------------|------------|
-| **[5 — Online evals](module_5_online_evals/)** | Tell offline experiments from online evals; score *live traces* with no ground truth. | reference-free evaluators, scoring traces + writing feedback, the data flywheel |
-| **[6 — Improving evals](module_6_improving_evals/)** | Align an LLM judge to your humans; promote traces into a dataset. | annotation queues, "evaluate the evaluator", **few-shot judge alignment**, **production→dataset curation** |
+| **[5 — Online evals](module_5_online_evals/)** | Tell offline experiments from online evals; score *live traces* with no ground truth; read whole sessions. | reference-free evaluators, scoring traces + writing feedback, the data flywheel, **threads + the Trajectory view** |
+| **[6 — Improving evals](module_6_improving_evals/)** | Align an LLM judge to your humans; promote traces into a dataset; see what **LangSmith Engine** automates of that loop. | annotation queues, "evaluate the evaluator", **few-shot judge alignment**, **production→dataset curation**, **Engine** |
 | **[7 — Production CI](module_7_production_ci/)** | Monitor production for quality drift. | scheduled monitor, baseline/drift alerting, scheduled GitHub Actions |
 
 The same HR agent (`hr_agent/`) is the system-under-test in every module.
@@ -67,6 +81,13 @@ The flip side: tools that always succeed can't test what happens when they
 tool outputs for canned ones — per test case — so Module 3 can evaluate the
 agent against outages, unknown employees, and partial failures the real tools
 could never return.
+
+The opposite problem shows up in production: real tools return *changing* data, so
+an answer key written today is wrong next month.
+[`hr_agent/replay.py`](hr_agent/replay.py) is middleware that replays the tool
+outputs recorded in a trace — matched on tool name *and* arguments — while the agent
+itself is re-run live. Same hook, different job: mocking invents a world, replay
+freezes one that existed.
 
 ---
 
@@ -96,7 +117,10 @@ The deterministic evaluators self-test as pure functions:
 python module_2_single_turn/deterministic_evals.py
 python module_3_agent_evals/trajectory_evals.py
 python module_3_agent_evals/tool_evals.py
+python module_3_agent_evals/replay_evals.py
 python module_5_online_evals/reference_free_evals.py
+python hr_agent/mocking.py
+python hr_agent/replay.py
 ```
 
 ### Run a module (keys needed)
@@ -107,14 +131,18 @@ python module_1_fundamentals/01_first_eval.py
 python module_2_single_turn/run_eval.py
 python module_3_agent_evals/run_eval.py
 python module_3_agent_evals/mocked_eval.py           # mocked tool failures
+python module_3_agent_evals/replay_eval.py           # stale data: frozen vs drifted world
 python module_4_ci/ci_gate.py --suite agent
 
 # Session 2 — production evals
-python module_5_online_evals/production_traffic.py   # create live traces
+python module_5_online_evals/production_traffic.py   # create live traces (threads)
 python module_5_online_evals/score_traces.py         # online-eval loop
 python module_6_improving_evals/judge_alignment.py   # zero-shot vs few-shot
 python module_6_improving_evals/curate_dataset.py    # traces -> dataset (flywheel)
 python module_7_production_ci/monitor.py             # drift vs baseline
+
+# Snapshot a real trace so it can be replayed (dry run by default)
+python module_3_agent_evals/snapshot_trace.py --run-id <root-run-uuid>
 ```
 
 Each prints a link/name to open the experiment (or project) in LangSmith.
@@ -132,7 +160,7 @@ Each prints a link/name to open the experiment (or project) in LangSmith.
 ## Repo map
 
 ```
-hr_agent/                  # the system under test (agent + tools + mock data)
+hr_agent/                  # the system under test (agent + tools + mock data + mocking + replay)
 # --- Session 1: Foundations ---
 module_1_fundamentals/     # concepts + first eval
 module_2_single_turn/      # deterministic + LLM-judge evaluators
@@ -235,7 +263,13 @@ so local test runs record and replay model calls. Measured on the module 4
 suite: **~45 s cold → ~1.4 s fully cached.**
 
 It's **disabled when `$CI` is set**: a gate that replays yesterday's responses
-can't detect that today's model regressed. Cassettes are gitignored — no
+can't detect that today's model regressed.
+
+This caches the *model*. It is not the fix for stale data — that's caching the
+*tools'* outputs so the agent is re-run against a frozen world. Different thing,
+different reason, and the opposite default: replaying tool outputs is exactly
+what you *do* want in CI, because it holds the world still while the agent (the
+thing under test) varies. See [Module 3](module_3_agent_evals/README.md#stale-data-when-the-world-changes-under-your-ground-truth). Cassettes are gitignored — no
 credentials reach disk, but their filenames are keyed on the LangSmith dataset
 UUID, so they'd never replay in another workspace. `WORKSHOP_NO_CACHE=1` forces
 real calls locally. See [module 4](module_4_ci/) for the `cached_hosts` trap.
@@ -261,6 +295,7 @@ evals/
 │   └── llm_judges/              # (module_2/llm_judge_evals.py)
 ├── fixtures/
 │   ├── tool_mocks/              # (hr_agent/mocking.py + module_3/mock_datasets.py)
+│   ├── tool_replays/            # (hr_agent/replay.py + module_3/snapshot_trace.py)
 │   └── cassettes/               # VCR recordings
 ├── suites/
 │   ├── regression.py            # (module_4/ci_gate.py build_suite + THRESHOLDS)

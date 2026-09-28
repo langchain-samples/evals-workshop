@@ -17,6 +17,7 @@ groundedness) are the building blocks you'll reuse in the harder agent evals.
 | `llm_judge_evals.py` | LLM-as-judge evaluators with structured output: correctness, groundedness (anti-hallucination), professional tone. |
 | `structured_output.py` | A target that returns a typed object + the "is the output the right shape?" check. |
 | `run_eval.py` | The full experiment: deterministic + LLM judges together. |
+| [`choosing-an-evaluator.md`](choosing-an-evaluator.md) | **When to use which.** A decision ladder from exact lookup to LLM judge to human review, with a worked example. Read this before you write a judge. |
 
 ## Run it
 
@@ -35,7 +36,9 @@ python module_2_single_turn/structured_output.py
 
 1. **Deterministic first.** `mentions_required_facts` and
    `structured_answer_is_valid` cost nothing and never flake. Most "is it
-   broken?" questions are objective — answer them with code.
+   broken?" questions are objective — answer them with code. When you do reach
+   for a judge, [`choosing-an-evaluator.md`](choosing-an-evaluator.md) is the
+   checklist for whether you should.
 2. **Fractional scores beat pass/fail** for partial credit (`2/3 facts
    present` is more actionable than a bare `0`).
 3. **LLM judges need structure.** We return a Pydantic object
@@ -75,7 +78,7 @@ client.create_examples(
 - **Name** — slashes sort and filter cleanly once you have dozens of datasets.
 - **Metadata** — dataset-level for discovery, example-level for slicing results
   ("how do we do on `difficulty: hard`?"). Both are filterable in the UI.
-- **Splits** — `test` is what CI gates on; `train` is scratch space for tuning
+- **Splits** — `gate` is what CI gates on; `scratch` is space for tuning
   prompts and few-shot judges. `metadata` and `splits` are *per-example*
   sequences, positionally aligned with `inputs`/`outputs`.
 

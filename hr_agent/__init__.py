@@ -14,18 +14,28 @@ from hr_agent.trajectory import extract_tool_calls, extract_trajectory, final_re
 __all__ = [
     "build_agent",
     "run_agent",
+    "run_conversation",
+    "new_thread_id",
     "extract_trajectory",
     "extract_tool_calls",
     "final_response",
     "DatasetDrivenMockMiddleware",
     "ToolMockMiddleware",
+    "TraceReplayMiddleware",
+    "recorded_calls_from_messages",
+    "recorded_calls_from_run",
 ]
 
 _LAZY = {
     "build_agent": "hr_agent.agent",
     "run_agent": "hr_agent.agent",
+    "run_conversation": "hr_agent.agent",
+    "new_thread_id": "hr_agent.agent",
     "ToolMockMiddleware": "hr_agent.mocking",
     "DatasetDrivenMockMiddleware": "hr_agent.mocking",
+    "TraceReplayMiddleware": "hr_agent.replay",
+    "recorded_calls_from_messages": "hr_agent.replay",
+    "recorded_calls_from_run": "hr_agent.replay",
 }
 
 

@@ -48,7 +48,7 @@ offline dataset — it's a real failure, not a hypothetical one.
 
 | File | What it teaches |
 |------|-----------------|
-| `production_traffic.py` | Sends messy, realistic queries through the agent **with tracing on**, so traces land in a LangSmith project. Your stand-in for production. |
+| `production_traffic.py` | Sends messy, realistic queries — including a few **multi-turn conversations** — through the agent **with tracing on**, so traces land in a LangSmith project as **threads**. Your stand-in for production. |
 | `reference_free_evals.py` | Evaluators that need **no** ground truth: `response_not_empty`, `not_deflected` (deterministic), `groundedness`, `professional_tone` (LLM judges). Self-tested. |
 | `score_traces.py` | The online-eval loop: pull recent traces, score them reference-free, write the scores back as feedback. |
 
@@ -96,6 +96,73 @@ job to operate.
 > Production tip: sampling matters. Scoring 100% of high-volume traffic with an LLM
 > judge gets expensive fast — sample for the online signal, and run the full set
 > only on curated datasets offline.
+
+## Reading production sessions: the Trajectory view
+
+Scores tell you *that* something went wrong. To see *what happened* you have to
+read the session, and a raw trace is a poor way to do it: nested runs, model calls
+inside tool calls inside agent steps. LangSmith's **Trajectory view** projects a
+thread down to the conversation the agent actually had — user messages, model
+replies, tool calls and their results, each shown once, in order, across the main
+agent and any subagents. Click a step to drop into its underlying trace with the
+nested runs, timings and retries intact.
+
+`production_traffic.py` now sends **threads**: every lone question is a one-turn
+thread, and two are real three-turn conversations. Open the project, go to
+**Threads**, and open one.
+
+```bash
+python module_5_online_evals/production_traffic.py
+```
+
+**What makes a thread show up.** Two pieces of run metadata, per the
+[Trajectory view docs](https://docs.langchain.com/langsmith/trajectory-view-integrations):
+
+| Key | Meaning |
+|---|---|
+| `thread_id` | on every run in the conversation — groups turns into one thread |
+| `ls_agent_type: "root"` | on each turn's top-level run — marks the main conversation |
+
+`hr_agent.run_conversation()` makes a thread the standard LangGraph way: a
+checkpointer plus a shared `thread_id` in the run config, one `invoke` per turn.
+The docs list LangChain and LangGraph as integrations that set both keys for you.
+We confirmed `thread_id` reaches the trace metadata; **we could not confirm
+`ls_agent_type` from this side**, so if a thread doesn't render, open a turn's root
+run → *Metadata* and check both keys are present, and set the missing one yourself.
+(Other frameworks differ — e.g. with OpenAI-style clients you set `thread_id`
+manually. The docs cover each.)
+
+**Two things to know:**
+
+- **Turn scope vs. thread scope.** Each turn is its own root run, and each turn's
+  output holds the *whole history so far*. Score a turn's tool calls with
+  `recorded_calls_from_messages(result, last_turn_only=True)`, not the raw
+  messages — otherwise turn 3 is credited with turns 1 and 2. The table at the top
+  of [Module 3](../module_3_agent_evals/README.md) is what changes when an
+  evaluator sees a thread.
+- **It's new and has rough edges.** The view launched in late September 2026; one
+  open SDK issue reports the first turn intermittently missing
+  ([langsmith-sdk #3594](https://github.com/langchain-ai/langsmith-sdk/issues/3594)).
+  If turn 1 is missing, the trace still has it.
+
+LangSmith's announcement says trajectories can be scored with online evaluators and
+routed to annotation queues or datasets — the same flywheel as above, applied to
+whole sessions. Look in your workspace's UI for the exact controls; we haven't
+scripted that here.
+
+**Try it.** Open the "vacation days" thread. Turn 3 asks about carry-over, which
+the policy text never mentions. Does the agent say so, or invent an answer?
+`groundedness` will give a number; the Trajectory view shows you *why*.
+
+## Beyond scoring: Engine
+
+Everything in Modules 5–6 is a loop you run by hand: find bad traces, look at them,
+label a few, curate a dataset. **LangSmith Engine** runs that loop for you against a
+tracing project — it clusters recurring failures into *issues*, diagnoses them, and
+proposes fixes and dataset examples. It reads the scores this module writes, so
+`score_traces.py`'s feedback on `hr-agent-production` is its input. The full
+walk-through, what it costs, and how it maps onto what you built, is in
+[Module 6](../module_6_improving_evals/README.md#engine-the-same-loop-automated).
 
 Next: **Module 6** — when the online judges disagree with your humans, align them
 with annotation and few-shot examples.
