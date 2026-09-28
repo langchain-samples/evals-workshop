@@ -128,6 +128,74 @@ production content, and curation should follow review rather than replace it.**
   dataset (`curate_dataset.py`) turns an incident into a permanent regression
   test.
 
+## Engine: the same loop, automated
+
+Read the diagram at the top of this module again: traces → find the bad ones → get
+human eyes on them → curate a dataset. You've now built each arrow by hand.
+**[LangSmith Engine](https://docs.langchain.com/langsmith/engine)** is the
+in-platform agent that runs that loop against a tracing project on a schedule.
+
+Per the docs, it detects recurring issues, diagnoses root cause "against your
+traces and connected source code", proposes a fix as a pull request, tracks new
+traces that match the issue, generates ground-truth dataset examples, and
+**reopens the issue automatically if it resurfaces**.
+
+### What it maps to in this repo
+
+| You built by hand | Engine's version |
+|---|---|
+| `score_traces.py` — flag low-scoring traces | Reads trace content **plus run feedback** — online evaluator scores, annotation-queue scores, SDK user feedback — as a high-priority signal, alongside errors and anomalies. Your evaluators aren't required ("no setup beyond evaluators or annotation queues"), but they sharpen what it picks. |
+| Reading flagged traces to find the pattern | Clusters related failures into named **issues** (title, category, priority) with a diagnosis and evidence traces, instead of a flat list of runs. |
+| `curate_dataset.py` — traces → dataset | **Add offline examples**: shows the input, the wrong output, and a *proposed* expected output; you add it to a dataset or edit it in an annotation queue first. |
+| `annotation_queue.py` — human review | The same queue; Engine-proposed assertions show up in it for a reviewer to accept or change. |
+| Fixing the prompt or tool by hand | A proposed prompt/code change, opened as a PR against a connected GitHub repo (**Open PR**), or filed to Linear. |
+| `module_7` monitor — noticing it came back | Reopens a closed issue when matching traces reappear. |
+| `judge_alignment.py` — is the judge trustworthy? | **Not** something the docs describe Engine doing. It consumes your evaluators' scores; it doesn't validate them. |
+
+That last row is the point. Engine automates the *plumbing*. It doesn't remove
+the need for evaluators you trust — it raises the stakes on them, because their
+scores now steer what it looks at.
+
+### Turning it on
+
+Straight from the docs — check them for anything newer:
+
+1. **An organization admin** enables it once: Settings → *Engine enablement* →
+   toggle **Enable Engine**, and accept the AI-features terms. (On self-hosted, an
+   operator has to enable it in the Helm chart first.)
+2. **Any user** then, per project: sidebar **Engine** → pick the project
+   (`hr-agent-production` after running Module 5) → optionally connect a GitHub repo
+   → **Start Analyzing**. The first analysis can take **up to 20 minutes**, so start
+   it early. Review the agent overview it writes, then **Accept & Continue**.
+
+Issues and their status are also available from the CLI:
+`langsmith project issues list --project hr-agent-production --status open`.
+
+### What to think about first
+
+- **It costs money, and the meter runs while it works.** Billed in LCUs, at $1.50
+  each per the docs; roughly 30–40 LCUs to initialize a project and 10–15 per
+  recurring scan, with an org-wide monthly cap (default 500 LCU) that pauses
+  analysis when hit. One project each for a room of attendees multiplies that —
+  enable it on one shared project. Verify current numbers before you rely on them.
+- **Trace data goes to a model.** The docs say trace data is processed with
+  LangChain-managed LLM keys and that bring-your-own-key isn't supported. Same
+  question as curation, one step earlier: this project's traces are HR-agent
+  traces, and a real one carries employee PII. Decide whether that project is
+  allowed to be analyzed *before* you connect it, not after.
+- **Its output is a proposal.** A suggested expected output has exactly the status
+  of the `needs_review: true` reference answers `curate_dataset.py` writes: a
+  starting point a person has to check. Engine picking the example doesn't make
+  the label ground truth.
+
+### Try it
+
+After `production_traffic.py` and `score_traces.py`, connect Engine to
+`hr-agent-production` and compare its issues to the failures you already know are
+in that traffic: the out-of-scope flight-booking request, and the carry-over
+question the policy never answers. Which did it find? Which did it name
+differently than you would have? What did it flag that `score_traces.py` didn't?
+
 ## How this connects to LangSmith
 
 - **Annotation Queues** (UI: *Annotation Queues*) are first-class. You can attach a

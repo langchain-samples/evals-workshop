@@ -13,8 +13,9 @@ steps to do a two-step job. Agent evals catch these. They're what separates
 Worth pinning down before anything else, because it is the most common misread
 of this module. Every example in `datasets.py` is a **single user message**, and
 `run_agent` does one `agent.invoke`. So "trajectory" means the ordered tool
-calls *inside one turn* — multi-**step**, single-**turn**. There is no
-multi-turn thread anywhere in this workshop.
+calls *inside one turn* — multi-**step**, single-**turn**. None of this module's
+evals run a multi-turn thread. Threads first appear in [Module 5](../module_5_online_evals/),
+on live traffic, where LangSmith's Trajectory view reads them (see the end of this file).
 
 The distinction matters the moment you take these evaluators to a real
 conversational agent, because the four below do not all mean the same thing at
@@ -57,6 +58,9 @@ assertion boundary are the same thing and the question stops arising.
 | `tool_evals.py` | Deterministic arg checks: correct `employee_id` propagation, well-formed args (enum validation). |
 | `llm_trajectory_judge.py` | LLM judge over the tool sequence for cases with no single "right" path. |
 | `run_eval.py` | One agent run feeds all three lenses. |
+| `mock_datasets.py`, `mocked_eval.py` | Hand-written worlds that never existed: outages, unknown employees, partial failures. |
+| `replay_datasets.py`, `replay_evals.py`, `replay_eval.py` | A frozen world that *did* exist, and what happens to ground truth when the data moves. **Start here if stale eval data is your problem.** |
+| `snapshot_trace.py` | Turn a production trace into a replayable dataset example. |
 
 How the trajectory is captured from the agent lives in
 [`hr_agent/trajectory.py`](../hr_agent/trajectory.py) — it walks the result
@@ -157,3 +161,142 @@ python module_3_agent_evals/mocked_eval.py     # run the experiment
 `DatasetDrivenMockMiddleware(..., strict=True)` raises if the agent calls a tool
 the example didn't mock. Use that in CI, where reaching a real system would be a
 bug. `strict=False` falls through to the real tool.
+
+---
+
+## Stale data: when the world changes under your ground truth
+
+An agent's outcome is only valid **at a point in time**. Say it investigates a
+record, recommends a fix, and the fix is applied. Re-run the same agent next week
+and the data is now correct: it finds nothing wrong and produces a different —
+equally right — result. A ground truth written from the first run now fails a
+healthy agent. Your regression suite decays as the world moves, and you can't
+tell a regression from drift.
+
+Trajectory evals alone don't fix this. They grade the path, and the path *also*
+depends on the data the agent found.
+
+### The experiment
+
+```bash
+python module_3_agent_evals/replay_evals.py     # self-test, no keys
+python module_3_agent_evals/replay_eval.py      # both worlds, prints the comparison
+```
+
+`replay_eval.py` runs the **same agent** twice over `replay_datasets.py`:
+
+| World | What the tools return |
+|---|---|
+| `recorded` | exactly what they returned when the trace was recorded (`TraceReplayMiddleware`) |
+| `drifted` | what the live system says "today" — a start date moved, a plan reclassified |
+
+and scores three things:
+
+| Evaluator | Kind | Recorded | Drifted |
+|---|---|---|---|
+| `matches_snapshot_calls` | **absolute** — "should schedule 2026-06-15" | pass | **fail** |
+| `args_follow_tool_outputs` | **invariant** — "date must equal what the lookup returned" | pass | pass |
+| `replay_fidelity` | did the agent stay on the recorded path? | see below | n/a |
+
+The agent is behaving correctly in both columns. The absolute check fails anyway,
+because its answer key describes a world that no longer exists. That is the
+failure to learn to recognize.
+
+### Two remedies
+
+1. **State the expectation as an invariant** when you can. It never names the
+   value, so there is nothing to go stale, and it needs no recording. This is the
+   cheaper fix — reach for it first.
+2. **Freeze the world** when the right answer really is a specific value. Record
+   what the tools returned during a real trace and replay it:
+
+```python
+from hr_agent import TraceReplayMiddleware, recorded_calls_from_messages, run_agent
+
+recorded = recorded_calls_from_messages(production_result)   # or ...from_run(run)
+replay = TraceReplayMiddleware(recorded)
+result = run_agent(question, middleware=[replay])
+replay.report()     # {"recorded": 2, "calls": 2, "misses": [], "unused": 0}
+```
+
+The tools are never executed; the *agent* — prompt, model, tool selection — is
+re-run live. Now a score change means the agent changed.
+
+### How replay differs from mocking
+
+| | `mocking.py` | `replay.py` |
+|---|---|---|
+| Returns | one hand-written payload per tool **name** | the recorded output for each specific **call** |
+| Matches on | tool name | tool name **and arguments** (case-insensitive strings) |
+| Models | worlds that never existed | a world that did, as it was |
+| On an unknown call | strict: raise, or fall through to the real tool | **miss**: explicit error result, logged, never guessed |
+
+Matching on arguments is what lets two `lookup_employee` calls for two different
+people each get the right record.
+
+### Read `replay_fidelity` first
+
+A replay **miss** means the agent asked for something the recording can't answer —
+it took a different route than in the trace. That's not a bug in the replay; it's
+the behavior change you were looking for (your prompt edit sent it somewhere new).
+It also means every other score on that example was measured against an error
+result, not the recorded world. So a miss is a *finding*, not noise. Two policies:
+
+- `on_miss="fail"` (default) — the call gets `{"error": "Replay miss …"}`; you score
+  `replay_fidelity` and investigate.
+- `on_miss="live"` — fall through to the real tool. This *mixes* frozen and live
+  data; treat those runs as suspect.
+
+### Caveats worth saying out loud
+
+- **Replay freezes the tools, not the agent's non-determinism.** The model still
+  varies run to run; you're removing one source of noise, not all of it.
+- **It only covers paths the recording covers.** A trace is one path through the
+  agent. Replaying it tests that path against the current agent, not the space of
+  paths. Record more traces, and use invariants for the rest.
+- **Recordings age too.** A frozen world is a snapshot; it stays valid because it is
+  *labeled* as one. `snapshot_trace.py` records an `as_of` date on every example.
+  Re-record when the real system's behavior changes in a way you care about.
+- **A recording is a copy of production data.** For a real HR agent that means
+  employee records. Nothing here redacts them; see the PII notes in
+  [Module 6](../module_6_improving_evals/).
+
+### Getting a recording from a real trace
+
+```bash
+# Inspect first — dry run is the default; nothing is written.
+python module_3_agent_evals/snapshot_trace.py --run-id <root-run-uuid>
+
+# One turn of a multi-turn thread (each turn's output holds the whole history).
+python module_3_agent_evals/snapshot_trace.py --run-id <uuid> --last-turn
+
+# Write it as a dataset example (lands in the `scratch` split).
+python module_3_agent_evals/snapshot_trace.py --run-id <uuid> --add-to-dataset
+```
+
+The example is created with **empty outputs and `needs_review: true`** — what the
+agent *should* have done is a human's call. Add `snapshot_calls` and/or
+`derived_args` in the UI, then move it to `gate`. LangSmith stores serialized
+messages in a few shapes; `recorded_calls_from_run` is lenient about them, but run
+the dry run on one of *your* traces before trusting it.
+
+---
+
+## Reading a trajectory in LangSmith
+
+Everything above computes trajectories in code. LangSmith also renders them: the
+**Trajectory view** shows a whole session as one readable path — user messages,
+model replies, tool calls and results, each once, in order — instead of a tree of
+nested runs. Click any step to open its underlying trace.
+
+It needs traces grouped into **threads** (a shared `thread_id`). This module's
+evals are single-turn, so there's nothing to group here; generate real threads
+with [Module 5](../module_5_online_evals/)'s traffic script, then open one. The
+same view is where you'd eyeball *why* a `trajectory_efficiency` score is low.
+
+Code-side, `hr_agent.run_conversation(turns)` is how a thread gets made: one
+`invoke` per turn, sharing a checkpointer and a `thread_id`.
+
+When you later point these evaluators at a whole thread rather than one turn, the
+table at the top of this file is the warning label.
+
