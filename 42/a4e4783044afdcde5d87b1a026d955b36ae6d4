@@ -1,0 +1,49 @@
+module_6_improving_evals/README.md
+  s_75bcfca3842338::t_bc8dd97e2d7c48 131-198
+module_5_online_evals/README.md
+  s_75bcfca3842338::t_bc8dd97e2d7c48 51,100-165
+  s_75bcfca3842338::t_28f1a0fb20a780 166
+README.md
+  s_75bcfca3842338::t_48281d9bb821a8 22-38,54-55,62-63,85-91,120,122-123,134,138,143-145,163,266-272,298
+module_3_agent_evals/replay_eval.py
+  s_75bcfca3842338::t_f50a547e67cee6 1-141
+hr_agent/__init__.py
+  s_75bcfca3842338::t_ba8102ae784b05 17-18,24-26,32-33,36-38
+module_5_online_evals/production_traffic.py
+  s_75bcfca3842338::t_822cb623e98bac 13-18,31,51-76,85-98,105-109
+module_3_agent_evals/snapshot_trace.py
+  s_75bcfca3842338::t_4fd345674eef62 1-143
+hr_agent/agent.py
+  s_75bcfca3842338::t_bb59993d0d0eab 42,46-52,59,78-110
+  s_75bcfca3842338::t_100aa69959f263 111-112
+module_3_agent_evals/replay_evals.py
+  s_75bcfca3842338::t_cbd9f65a3d6427 1-223
+module_2_single_turn/choosing-an-evaluator.md
+  s_75bcfca3842338::t_e938e877538775 1-19,21-85,88-95
+  s_75bcfca3842338::t_c62b70b98a0c70 20,86-87
+module_3_agent_evals/replay_datasets.py
+  s_75bcfca3842338::t_975dc33a9d8e3e 1-173
+module_2_single_turn/README.md
+  s_75bcfca3842338::t_b292113e56e69d 20,39-41,81
+module_3_agent_evals/README.md
+  s_75bcfca3842338::t_6e6c8d5e45ce0b 16-18,61-63,164-302
+hr_agent/replay.py
+  s_75bcfca3842338::t_7792f4349a1c53 1-310,313-386,389-421
+  s_75bcfca3842338::t_2566a6fc863765 311-312,387-388
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "42a4e4783044afdcde5d87b1a026d955b36ae6d4",
+  "prompts": {},
+  "sessions": {
+    "s_75bcfca3842338": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9be5654c-c0a7-4fa5-8b0b-e2e82cc92f27",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Eric Johanson <eric.johanson@langchain.dev>"
+    }
+  }
+}
