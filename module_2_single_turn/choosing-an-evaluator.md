@@ -22,7 +22,7 @@ Start at the top. Stop at the first rung that can answer your question.
 | 3 | Is it about the **process** — which tools, in what order, with which args? | Trajectory and argument checks | Free · never flakes | `module_3/trajectory_evals.py`, `tool_evals.py` |
 | 4 | Can I state it as an **invariant** over what the tools returned? | A relative check ("this arg must equal that output field") | Free · never flakes | `args_follow_tool_outputs` (`module_3/replay_evals.py`) |
 | 5 | Can a **heuristic** approximate it well enough — keywords, regex, thresholds? | A rule with a *known* error rate | Free · flakes only where the rule is crude | `not_deflected`, `reports_tool_failure` |
-| 6 | Is it a **narrow, typed call about meaning** you can read straight off the text — a yes/no, one of a few labels, a rating on a short scale — that you need to make at **volume**? | **System 1 model** (e.g. Jev) — [see below](#system-1-models-jev-the-rung-between-a-rule-and-an-llm-judge) | Cents per thousand · low variance · no explanation | `module_6/system1_judge.py`, `system1_alignment.py` |
+| 6 | Is it a **narrow, typed call about meaning** you can read straight off the text — a yes/no, one of a few labels, a rating on a short scale — that you need to make at **volume**? | **System 1 model** (e.g. Jev) — [see below](#system-1-models-jev-the-rung-between-a-rule-and-an-llm-judge) | Cents per thousand · low variance · no explanation | `system1_judge.py`, `system1_alignment.py` — [try it](#try-it-on-this-repo) |
 | 7 | Is it genuinely **open-ended** — tone, groundedness of free text, "was this a reasonable approach" — or does it need a **written rationale**? | LLM judge | $ per run · noisy | `module_2/llm_judge_evals.py`, `llm_trajectory_judge.py` |
 | 8 | Is it **high-stakes**, or are you unsure the judge is right? | Human review | Slow · the ground truth | Module 6: annotation queues |
 
@@ -168,8 +168,8 @@ right.
 4. **Measure it against human labels before you trust it** — same "evaluate the
    evaluator" step as any judge ([Module 6](../module_6_improving_evals/)), with
    partial-answer and adversarial cases included, and a held-out slice you never
-   tuned on. `judge_alignment.py` is built for the few-shot LLM judge, not decision
-   models, but the procedure is the same: agreement with humans *is* its accuracy.
+   tuned on. `system1_alignment.py` does this for a decision model; Module 6's `judge_alignment.py`
+   does it for the few-shot LLM judge. The procedure is the same: agreement with humans *is* its accuracy.
 5. **Pin the version.** `jev-latest` moves when TypeSafe ships a release. Select the
    versioned ID you validated (HoneyHive's example: `jev-1.13.0`) and re-check
    against your labels before upgrading.
@@ -208,19 +208,60 @@ right.
   third-party hop. The free period was announced as running through
   September 28, 2026; verify what it costs now.
 
-**A working example.** [`module_6_improving_evals/system1_alignment.py`](../module_6_improving_evals/system1_alignment.py)
-scores the phrase-list `reports_tool_failure` check and a System 1 classifier against
-40 labeled replies, on a held-out gate split, and reports what each gets wrong;
-[`system1_judge.py`](../module_6_improving_evals/system1_judge.py) is the same question
-as an evaluator (`python module_3_agent_evals/mocked_eval.py --system1`). The phrase
-baseline runs with no keys. The System 1 side needs a key, sends text to a third
-party, and is off unless you ask for it.
+### Try it on this repo
+
+The question is one this repo already answers badly: *did the reply admit the tool
+failed?* Module 3's `reports_tool_failure` is a phrase list. It passes "no problem at
+all!" (it contains "problem") and fails "that didn't go through". The files next to
+this guide score it, and a System 1 model, against 40 labeled replies:
+
+```bash
+python module_2_single_turn/system1_alignment.py                     # phrase-list baseline — no keys
+python module_2_single_turn/system1_alignment.py --classifier both   # + System 1 (needs a key; sends text out)
+python module_3_agent_evals/mocked_eval.py --system1                 # the same, as an evaluator in an experiment
+```
+
+The baseline, run for real on the held-out `gate` split:
+
+```
+phrase  (tool_evals.reports_tool_failure signal words)  (27 examples: 27 decided, 0 in review band)
+  accuracy  0.48   precision  0.45   recall  0.38   f1  0.42   coverage  1.00
+  errors by category: B: 6 (FN), E: 6 (FP), F: 2 (FN)
+```
+
+The System 1 side asks one Noul question. Note where the split falls: *code* decides
+which tool results failed (a recorded fact), and the model only judges whether the
+reply *says so* (meaning). The state carries no grading instructions.
+
+```python
+noul("Does the assistant_reply tell the user that at least one of the "
+     "failed_tool_results did not complete, or is delayed?",
+     true="The reply says or clearly implies that an action failed, was blocked, "
+          "or is delayed or unavailable.",
+     false="The reply says or implies everything succeeded, or never mentions the problem.")
+
+state = {"failed_tool_results": [...], "assistant_reply": "..."}
+```
+
+An answer inside the review band (default 0.4–0.6) isn't scored as pass or fail; it's
+flagged `system1_needs_review`, ready for an annotation queue. Tune the band on the
+`scratch` split and report on `gate`.
+
+| File | Role |
+|---|---|
+| [`system1_alignment.py`](system1_alignment.py) | scores each classifier against the labels; `--self-test` runs offline |
+| [`system1_judge.py`](system1_judge.py) | the question above, as an evaluator |
+| [`system1_client.py`](system1_client.py) | a small `httpx` client: https-only host allowlist, keys from the environment only, strict response validation, no vendor SDK |
+| [`system1_labels.py`](system1_labels.py) | 40 synthetic labeled replies, `gate`/`scratch` split |
 
 Two honest limits. **We haven't run it against the live API** — the client is tested
-against a mock server, so the request and response handling is verified but Jev's
-accuracy on your data is not. And the labeled set is author-written and built to
-break phrase lists, so it shows that phrase lists *have* failure modes, not how yours
-does. Bring 50 of your own labeled replies; that's the point of the exercise.
+against a mock server, so request and response handling is verified but Jev's accuracy
+on your data is not, and there is no System 1 number here to quote. And the label set is
+author-written and built to break phrase lists (the B and E errors above are by
+construction), so it shows phrase lists *have* failure modes, not how yours does. Bring
+50 of your own labeled replies; that is the exercise. The System 1 side **sends text to
+a third party**, so it is off unless you ask for it and prints the host first.
+
 Everything else in this section comes from LangChain's docs and blog, TypeSafe's docs,
 HoneyHive's guide, and the two preprints' abstracts (we did not read the papers' full
 text).

@@ -1,6 +1,6 @@
 """Evaluate the evaluator — for a System 1 model this time.
 
-`judge_alignment.py` asks how well an LLM judge agrees with human labels. This asks
+Module 6's `judge_alignment.py` asks how well an LLM judge agrees with human labels. This asks
 the same of two cheaper ways to answer one question — "did the reply admit the
 tool failed?":
 
@@ -13,10 +13,10 @@ Both are scored against `system1_labels.py` on the **gate** split. The **scratch
 split exists so you can tune the review band without contaminating the number you
 report; tune on gate and it stops measuring anything.
 
-    python module_6_improving_evals/system1_alignment.py                     # phrase only, offline
-    python module_6_improving_evals/system1_alignment.py --classifier both   # + System 1 (needs a key)
-    python module_6_improving_evals/system1_alignment.py --split scratch     # where you may tune
-    python module_6_improving_evals/system1_alignment.py --self-test         # no network
+    python module_2_single_turn/system1_alignment.py                     # phrase only, offline
+    python module_2_single_turn/system1_alignment.py --classifier both   # + System 1 (needs a key)
+    python module_2_single_turn/system1_alignment.py --split scratch     # where you may tune
+    python module_2_single_turn/system1_alignment.py --self-test         # no network
 
 What to look at:
 
@@ -49,13 +49,13 @@ from typing import Callable
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from module_3_agent_evals.tool_evals import reports_tool_failure
-from module_6_improving_evals.system1_judge import (
+from module_2_single_turn.system1_judge import (
     REVIEW_BAND,
     ask_acknowledges,
     default_client,
     verdict,
 )
-from module_6_improving_evals.system1_labels import EXAMPLES
+from module_2_single_turn.system1_labels import EXAMPLES
 
 Classifier = Callable[[dict], "bool | None"]  # example -> True / False / None (= needs review)
 

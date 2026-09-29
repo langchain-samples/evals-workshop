@@ -161,7 +161,7 @@ python module_3_agent_evals/mocked_eval.py     # run the experiment
 That evaluator is a phrase list. `python module_3_agent_evals/mocked_eval.py --system1`
 adds a System 1 model's answer to the same question, with a `system1_needs_review`
 key for low-confidence answers. It sends text to a third party, so it's opt-in — and
-you should measure it first; see [Module 6](../module_6_improving_evals/README.md#a-cheaper-judge-system-1-models-measured-against-labels).
+you should measure it first; see [the decision guide](../module_2_single_turn/choosing-an-evaluator.md#try-it-on-this-repo).
 
 ### Strict vs permissive
 

@@ -136,7 +136,7 @@ def by_split(split: str) -> list[dict]:
 
 
 if __name__ == "__main__":
-    from module_6_improving_evals.system1_judge import failing_results
+    from module_2_single_turn.system1_judge import failing_results
 
     assert len(EXAMPLES) == 40
     assert len({e["id"] for e in EXAMPLES}) == 40

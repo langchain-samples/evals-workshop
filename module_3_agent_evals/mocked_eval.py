@@ -21,7 +21,7 @@ answers "did the reply admit the tool failed?" and its confidence is written as 
 `system1_needs_review` key. It **sends the failing tool results and the agent's
 reply to a third-party API**, so it is off unless you ask, needs a key
 (TYPESAFE_API_KEY), and prints the host first. Before trusting it, measure it:
-`module_6_improving_evals/system1_alignment.py`.
+`module_2_single_turn/system1_alignment.py`.
 """
 
 from __future__ import annotations
@@ -74,7 +74,7 @@ def main() -> None:
     evaluators = [*FAILURE_EVALUATORS, required_tools_used, no_forbidden_tools]
     if args.system1:
         # Imported lazily: the default path shouldn't need httpx or a System 1 key.
-        from module_6_improving_evals.system1_judge import default_client, make_evaluator
+        from module_2_single_turn.system1_judge import default_client, make_evaluator
 
         try:
             s1 = default_client()

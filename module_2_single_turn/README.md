@@ -17,6 +17,7 @@ groundedness) are the building blocks you'll reuse in the harder agent evals.
 | `llm_judge_evals.py` | LLM-as-judge evaluators with structured output: correctness, groundedness (anti-hallucination), professional tone. |
 | `structured_output.py` | A target that returns a typed object + the "is the output the right shape?" check. |
 | `run_eval.py` | The full experiment: deterministic + LLM judges together. |
+| `system1_alignment.py`, `system1_judge.py`, `system1_client.py`, `system1_labels.py` | **A working System 1 example**: a phrase-list check and a System 1 model (Jev) scored against 40 labeled replies on a held-out split. Runs offline by default; the System 1 side is opt-in. See [the guide](choosing-an-evaluator.md#try-it-on-this-repo). |
 | [`choosing-an-evaluator.md`](choosing-an-evaluator.md) | **When to use which.** A decision ladder from exact lookup to System 1 models (Jev) to LLM judge to human review, with a worked example. Read this before you write a judge. |
 
 ## Run it
@@ -49,6 +50,12 @@ python module_2_single_turn/structured_output.py
    policy text as the source of truth.
 5. **Validate your evaluators.** `deterministic_evals.py` has self-tests on
    known good/bad outputs. An untrusted evaluator is worse than none.
+6. **Pick the cheapest evaluator that can answer the question.** Code for facts you
+   can look up or compute; a System 1 model (Jev) for narrow, typed calls about
+   meaning at volume; an LLM judge only for open-ended criteria or when you need a
+   rationale; humans for high-stakes calls and for checking the rest. The ladder and a
+   working System 1 example are in [`choosing-an-evaluator.md`](choosing-an-evaluator.md).
+   Whichever you choose, measure it against labels first.
 
 > Production tip: LangChain's [`openevals`](https://github.com/langchain-ai/openevals)
 > ships ready-made correctness/groundedness judges. We build them by hand here

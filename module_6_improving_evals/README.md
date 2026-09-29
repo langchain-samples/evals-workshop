@@ -32,7 +32,6 @@ The loop that fixes this:
 | `few_shot_judge.py`   | One judge ("does this meet our HR house style?") that runs zero-shot (rubric only) or few-shot (rubric + human-labeled examples).                                                                            |
 | `judge_alignment.py`  | **Evaluate the evaluator**: measure how often the judge agrees with humans, zero-shot vs few-shot, on a held-out label set.                                                                                  |
 | `curate_dataset.py`   | **Close the flywheel**: promote flagged/labeled production traces into a curated offline dataset, each example linked to its source trace.                                                                    |
-| `system1_alignment.py`, `system1_judge.py`, `system1_client.py`, `system1_labels.py` | **A cheaper judge, measured the same way**: score a phrase-list check and a System 1 model (Jev) against labeled replies on a held-out split. See [below](#a-cheaper-judge-system-1-models-measured-against-labels). |
 
 
 ## Run it
@@ -129,49 +128,15 @@ production content, and curation should follow review rather than replace it.**
   dataset (`curate_dataset.py`) turns an incident into a permanent regression
   test.
 
-## A cheaper judge: System 1 models, measured against labels
+## Cheaper judges get the same treatment
 
-Everything above evaluates an *LLM* judge. A **System 1 model** (Jev) is a
-different kind of judge — it answers typed yes/no or pick-one questions with
-probabilities and writes no text, so it's far cheaper and faster, and worse at
-anything that needs reasoning. When to use one is in the
-[decision guide](../module_2_single_turn/choosing-an-evaluator.md#system-1-models-jev-the-rung-between-a-rule-and-an-llm-judge);
-this is how you check that one is worth using. The method is the same as
-`judge_alignment.py`: agreement with human labels *is* its accuracy.
-
-```bash
-python module_6_improving_evals/system1_labels.py                        # validate the label set
-python module_6_improving_evals/system1_alignment.py --self-test         # no network
-python module_6_improving_evals/system1_alignment.py                     # phrase-list baseline, no keys
-python module_6_improving_evals/system1_alignment.py --classifier both   # + System 1 (needs TYPESAFE_API_KEY)
-python module_3_agent_evals/mocked_eval.py --system1                     # as an evaluator in an experiment
-```
-
-The question is deliberately one the repo already answers badly: *did the reply admit
-the tool failed?* Module 3's `reports_tool_failure` is a phrase list, which passes
-"no problem at all!" and fails "that didn't go through". Two design points worth
-copying:
-
-- **Code decides facts; the model judges meaning.** Which tool result failed is
-  parsed in code (`status: failed`, an `error` key). The model is shown only the
-  failed results and the reply, and asked only whether the reply *says so*.
-- **Confidence routes to humans.** An answer inside the review band (default
-  0.4–0.6) isn't counted as a pass or fail — it's flagged `system1_needs_review`,
-  the natural input to the annotation queue above. Tune the band on the `scratch`
-  split, report on `gate`. Accuracy is computed on decided answers *next to*
-  coverage, because a classifier can look accurate by declining to answer.
-
-**Read the results carefully.** The 40 labeled replies are synthetic, author-written,
-and built to include cases where phrase lists fail — so the baseline's poor score
-proves phrase lists *have* failure modes, not that yours does. We haven't run the live
-API here (the client is tested against a mock server), so there is no System 1 number
-to quote. Label ~50 of your own replies and let those decide.
-
-**This sends text to a third party**, off unless you pass `--classifier system1|both`
-or `--system1`, with the host printed first. The synthetic set has no real data; your
-traces might. TypeSafe documents zero data retention as an enterprise-only option. The
-client only talks to allowlisted hosts and reads keys only from the environment; it
-adds no vendor SDK.
+Everything above aligns an *LLM* judge. A **System 1 model** (Jev) is a cheaper, faster
+kind of judge that answers typed yes/no or pick-one questions with probabilities and
+writes no text. The rule doesn't change: measure it against human labels on a held-out
+slice before you trust it, and send the low-confidence answers to a human. When to use
+one, and a working example that scores it against labels, live with the rest of the
+"which evaluator?" material in
+[Module 2](../module_2_single_turn/choosing-an-evaluator.md#try-it-on-this-repo).
 
 ## Engine: the same loop, automated
 

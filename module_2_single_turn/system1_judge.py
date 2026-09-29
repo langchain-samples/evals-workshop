@@ -27,7 +27,7 @@ Plug it into an experiment:
 
 Or measure it against labels first — which you should, before trusting it:
 
-    python module_6_improving_evals/system1_alignment.py --classifier both
+    python module_2_single_turn/system1_alignment.py --classifier both
 
 This sends text to a third party. See `system1_client.py` for the data note.
 """
@@ -42,7 +42,7 @@ from typing import Any, Callable
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from module_6_improving_evals.system1_client import System1Client, System1Error, noul
+from module_2_single_turn.system1_client import System1Client, System1Error, noul
 
 # A probability inside this band is "I don't know". Start here; tune the band on
 # your *scratch* labels, then report on the held-out gate slice.

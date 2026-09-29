@@ -37,6 +37,23 @@ You don't have to read in order. Pick the row that sounds like your problem:
 | have **agents in production** and want to see what they're doing | [Module 5 → Trajectory view](module_5_online_evals/README.md#reading-production-sessions-the-trajectory-view) | [Module 6 → Engine](module_6_improving_evals/README.md#engine-the-same-loop-automated) |
 | are **wiring evals into CI** | [Module 4](module_4_ci/) | [Module 7](module_7_production_ci/) for scheduled monitoring |
 
+### Which evaluator should I use?
+
+Start at the top and stop at the first row that answers your question:
+
+| The question is… | Use | Because |
+|---|---|---|
+| a fact you can **look up or compute** — an ID exists, a date matches, a field is valid, an argument equals a tool's output | **Deterministic check** (code) | Free, exact, never flakes. Most "is it broken?" questions are this. |
+| a **narrow, typed call about meaning** you can read straight off the text — yes/no, or one of a few labels — that you need to make at **volume** | **System 1 model** (e.g. Jev) | Cheap, fast, low variance, and it returns probabilities you can route on. It doesn't reason or explain, so nothing that has to be *derived*. |
+| **open-ended** — tone, whether free text is grounded, "was that a reasonable approach" — or needs a **written rationale** | **LLM judge** | The only one that reasons and explains. It costs money and is noisy, so validate it. |
+| **high-stakes**, or you aren't sure the judge is right | **Human review** | The ground truth the others are measured against. Send low-confidence answers here. |
+
+Whichever you pick, measure it against labeled examples on a held-out slice before
+you trust it ([Module 6](module_6_improving_evals/)). The System 1 row is the newest
+and least proven: Jev is early access, sends text to a third party, and the example
+here hasn't been run against the live API. The full ladder, worked examples, and that
+example are in [Choosing an evaluator](module_2_single_turn/choosing-an-evaluator.md).
+
 ## The arc
 
 ```
@@ -51,7 +68,7 @@ Fundamentals  ->  Single-turn evals -> Agent evals  ->  Evals in   │  Online e
 | Module | You learn to… | Evaluators introduced |
 |--------|---------------|------------------------|
 | **[1 — Fundamentals](module_1_fundamentals/)** | Name the 4 parts of any eval; run one end-to-end. | first deterministic check |
-| **[2 — Single-turn](module_2_single_turn/)** | Judge a single answer, and **decide when a judge is warranted at all**. | deterministic (facts, **shape validation**) + LLM-judge (correctness, groundedness, tone) + a [decision ladder](module_2_single_turn/choosing-an-evaluator.md) |
+| **[2 — Single-turn](module_2_single_turn/)** | Judge a single answer, and **decide when a judge is warranted at all**. | deterministic (facts, **shape validation**) + LLM-judge (correctness, groundedness, tone) + a [decision ladder](module_2_single_turn/choosing-an-evaluator.md) + a **System 1 (Jev) judge vs labels** example |
 | **[3 — Agent evals](module_3_agent_evals/)** | Judge the *trajectory* and tool calls, not just the answer. Mock tool outputs to reach failure states. **Replay recorded tool outputs when the data changes under your ground truth.** | trajectory (exact / required / forbidden / efficiency), tool-args, LLM trajectory judge, **failure handling**, **point-in-time replay + invariants** |
 | **[4 — CI](module_4_ci/)** | Gate a build on eval results. | pytest per-example gate + aggregate threshold gate + GitHub Actions |
 
@@ -60,7 +77,7 @@ Fundamentals  ->  Single-turn evals -> Agent evals  ->  Evals in   │  Online e
 | Module | You learn to… | What's new |
 |--------|---------------|------------|
 | **[5 — Online evals](module_5_online_evals/)** | Tell offline experiments from online evals; score *live traces* with no ground truth; read whole sessions. | reference-free evaluators, scoring traces + writing feedback, the data flywheel, **threads + the Trajectory view** |
-| **[6 — Improving evals](module_6_improving_evals/)** | Align an LLM judge to your humans; promote traces into a dataset; see what **LangSmith Engine** automates of that loop. | annotation queues, "evaluate the evaluator", **few-shot judge alignment**, **production→dataset curation**, **System 1 judge vs labels**, **Engine** |
+| **[6 — Improving evals](module_6_improving_evals/)** | Align an LLM judge to your humans; promote traces into a dataset; see what **LangSmith Engine** automates of that loop. | annotation queues, "evaluate the evaluator", **few-shot judge alignment**, **production→dataset curation**, **Engine** |
 | **[7 — Production CI](module_7_production_ci/)** | Monitor production for quality drift. | scheduled monitor, baseline/drift alerting, scheduled GitHub Actions |
 
 The same HR agent (`hr_agent/`) is the system-under-test in every module.
@@ -121,11 +138,11 @@ python module_3_agent_evals/replay_evals.py
 python module_5_online_evals/reference_free_evals.py
 python hr_agent/mocking.py
 python hr_agent/replay.py
-python module_6_improving_evals/system1_client.py
-python module_6_improving_evals/system1_judge.py
-python module_6_improving_evals/system1_labels.py
-python module_6_improving_evals/system1_alignment.py --self-test
-python module_6_improving_evals/system1_alignment.py   # phrase-list baseline vs labels
+python module_2_single_turn/system1_client.py
+python module_2_single_turn/system1_judge.py
+python module_2_single_turn/system1_labels.py
+python module_2_single_turn/system1_alignment.py --self-test
+python module_2_single_turn/system1_alignment.py   # phrase-list baseline vs labels
 ```
 
 ### Run a module (keys needed)
@@ -168,7 +185,7 @@ Each prints a link/name to open the experiment (or project) in LangSmith.
 hr_agent/                  # the system under test (agent + tools + mock data + mocking + replay)
 # --- Session 1: Foundations ---
 module_1_fundamentals/     # concepts + first eval
-module_2_single_turn/      # deterministic + LLM-judge evaluators
+module_2_single_turn/      # deterministic + LLM-judge + System 1 evaluators; which-evaluator guide
 module_3_agent_evals/      # trajectory + tool evaluators
 module_4_ci/               # pytest gate, aggregate gate, GitHub Actions
 # --- Session 2: Evals for Production ---
