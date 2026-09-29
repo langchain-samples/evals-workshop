@@ -156,6 +156,13 @@ python module_3_agent_evals/mock_datasets.py   # create the dataset
 python module_3_agent_evals/mocked_eval.py     # run the experiment
 ```
 
+### A second opinion on `reports_tool_failure`
+
+That evaluator is a phrase list. `python module_3_agent_evals/mocked_eval.py --system1`
+adds a System 1 model's answer to the same question, with a `system1_needs_review`
+key for low-confidence answers. It sends text to a third party, so it's opt-in — and
+you should measure it first; see [the decision guide](../module_2_single_turn/choosing-an-evaluator.md#try-it-on-this-repo).
+
 ### Strict vs permissive
 
 `DatasetDrivenMockMiddleware(..., strict=True)` raises if the agent calls a tool

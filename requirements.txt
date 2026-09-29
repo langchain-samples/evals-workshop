@@ -9,6 +9,10 @@ langsmith[pytest,vcr]>=0.3.4
 langchain-anthropic>=1.0,<2.0
 # langchain-openai>=1.0,<2.0   # uncomment to use OpenAI models/judges
 
+# HTTP client for the System 1 (Jev) example in module 2. Already installed as a
+# dependency of langsmith/anthropic; listed because we import it directly.
+httpx>=0.27
+
 # Workshop utilities
 python-dotenv>=1.0
 pydantic>=2.0

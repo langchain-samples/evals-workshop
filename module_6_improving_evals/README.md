@@ -128,6 +128,16 @@ production content, and curation should follow review rather than replace it.**
   dataset (`curate_dataset.py`) turns an incident into a permanent regression
   test.
 
+## Cheaper judges get the same treatment
+
+Everything above aligns an *LLM* judge. A **System 1 model** (Jev) is a cheaper, faster
+kind of judge that answers typed yes/no or pick-one questions with probabilities and
+writes no text. The rule doesn't change: measure it against human labels on a held-out
+slice before you trust it, and send the low-confidence answers to a human. When to use
+one, and a working example that scores it against labels, live with the rest of the
+"which evaluator?" material in
+[Module 2](../module_2_single_turn/choosing-an-evaluator.md#try-it-on-this-repo).
+
 ## Engine: the same loop, automated
 
 Read the diagram at the top of this module again: traces → find the bad ones → get
