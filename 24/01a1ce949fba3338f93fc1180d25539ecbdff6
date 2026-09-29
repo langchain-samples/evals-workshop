@@ -1,0 +1,41 @@
+module_2_single_turn/system1_labels.py
+  s_75bcfca3842338::t_ac070e3add95cc 1-154
+module_3_agent_evals/README.md
+  s_75bcfca3842338::t_b92b13e35a392a 164
+module_2_single_turn/choosing-an-evaluator.md
+  s_75bcfca3842338::t_b92b13e35a392a 25,171-172,211-255,258-264
+module_6_improving_evals/README.md
+  s_75bcfca3842338::t_b92b13e35a392a 131,133-139
+requirements.txt
+  s_75bcfca3842338::t_b92b13e35a392a 12
+module_2_single_turn/README.md
+  s_75bcfca3842338::t_b92b13e35a392a 20
+  s_75bcfca3842338::t_b729b5808c92e8 53-58
+module_2_single_turn/system1_alignment.py
+  s_75bcfca3842338::t_ac070e3add95cc 1-2,4-255
+  s_75bcfca3842338::t_b92b13e35a392a 3
+module_3_agent_evals/mocked_eval.py
+  s_75bcfca3842338::t_ac070e3add95cc 24,77
+README.md
+  s_75bcfca3842338::t_b92b13e35a392a 71,80
+  s_75bcfca3842338::t_ac070e3add95cc 141-145
+  s_75bcfca3842338::t_b729b5808c92e8 40-56,188
+module_2_single_turn/system1_judge.py
+  s_75bcfca3842338::t_ac070e3add95cc 1-255
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "2401a1ce949fba3338f93fc1180d25539ecbdff6",
+  "prompts": {},
+  "sessions": {
+    "s_75bcfca3842338": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9be5654c-c0a7-4fa5-8b0b-e2e82cc92f27",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Eric Johanson <eric.johanson@langchain.dev>"
+    }
+  }
+}
