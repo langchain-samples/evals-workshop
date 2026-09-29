@@ -14,10 +14,19 @@ The agent's own code is untouched. Only the world around it is swapped, which
 is what keeps this an eval of the agent rather than an eval of a different app.
 
 Run:  python module_3_agent_evals/mocked_eval.py
+      python module_3_agent_evals/mocked_eval.py --system1     # add a System 1 evaluator
+
+`--system1` adds a second opinion on `reports_tool_failure`: a System 1 model (Jev)
+answers "did the reply admit the tool failed?" and its confidence is written as a
+`system1_needs_review` key. It **sends the failing tool results and the agent's
+reply to a third-party API**, so it is off unless you ask, needs a key
+(TYPESAFE_API_KEY), and prints the host first. Before trusting it, measure it:
+`module_6_improving_evals/system1_alignment.py`.
 """
 
 from __future__ import annotations
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -57,6 +66,24 @@ def target(inputs: dict) -> dict:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description="Tool-failure experiment with mocked tool outputs.")
+    parser.add_argument("--system1", action="store_true",
+                        help="Also score with a System 1 model. Sends text to a third party.")
+    args = parser.parse_args()
+
+    evaluators = [*FAILURE_EVALUATORS, required_tools_used, no_forbidden_tools]
+    if args.system1:
+        # Imported lazily: the default path shouldn't need httpx or a System 1 key.
+        from module_6_improving_evals.system1_judge import default_client, make_evaluator
+
+        try:
+            s1 = default_client()
+        except Exception as e:
+            raise SystemExit(f"Can't enable --system1: {e}")
+        print(f"--system1: failing tool results and replies will be sent to {s1.host} "
+              f"(model {s1.model}).")
+        evaluators.append(make_evaluator(s1))
+
     require_langsmith()
     client = Client()
     ensure_dataset(client)
@@ -64,9 +91,9 @@ def main() -> None:
     results = client.evaluate(
         target,
         data=DATASET_NAME,
-        evaluators=[*FAILURE_EVALUATORS, required_tools_used, no_forbidden_tools],
+        evaluators=evaluators,
         experiment_prefix="module-3-tool-failures",
-        metadata=experiment_metadata(module=3, suite="tool-failures", mocked=True),
+        metadata=experiment_metadata(module=3, suite="tool-failures", mocked=True, system1=args.system1),
         description="Agent behavior under mocked tool failures (outage, unknown employee, partial failure).",
         max_concurrency=3,
     )

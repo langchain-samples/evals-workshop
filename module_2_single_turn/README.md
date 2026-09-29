@@ -17,7 +17,7 @@ groundedness) are the building blocks you'll reuse in the harder agent evals.
 | `llm_judge_evals.py` | LLM-as-judge evaluators with structured output: correctness, groundedness (anti-hallucination), professional tone. |
 | `structured_output.py` | A target that returns a typed object + the "is the output the right shape?" check. |
 | `run_eval.py` | The full experiment: deterministic + LLM judges together. |
-| [`choosing-an-evaluator.md`](choosing-an-evaluator.md) | **When to use which.** A decision ladder from exact lookup to LLM judge to human review, with a worked example. Read this before you write a judge. |
+| [`choosing-an-evaluator.md`](choosing-an-evaluator.md) | **When to use which.** A decision ladder from exact lookup to System 1 models (Jev) to LLM judge to human review, with a worked example. Read this before you write a judge. |
 
 ## Run it
 

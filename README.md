@@ -60,7 +60,7 @@ Fundamentals  ->  Single-turn evals -> Agent evals  ->  Evals in   │  Online e
 | Module | You learn to… | What's new |
 |--------|---------------|------------|
 | **[5 — Online evals](module_5_online_evals/)** | Tell offline experiments from online evals; score *live traces* with no ground truth; read whole sessions. | reference-free evaluators, scoring traces + writing feedback, the data flywheel, **threads + the Trajectory view** |
-| **[6 — Improving evals](module_6_improving_evals/)** | Align an LLM judge to your humans; promote traces into a dataset; see what **LangSmith Engine** automates of that loop. | annotation queues, "evaluate the evaluator", **few-shot judge alignment**, **production→dataset curation**, **Engine** |
+| **[6 — Improving evals](module_6_improving_evals/)** | Align an LLM judge to your humans; promote traces into a dataset; see what **LangSmith Engine** automates of that loop. | annotation queues, "evaluate the evaluator", **few-shot judge alignment**, **production→dataset curation**, **System 1 judge vs labels**, **Engine** |
 | **[7 — Production CI](module_7_production_ci/)** | Monitor production for quality drift. | scheduled monitor, baseline/drift alerting, scheduled GitHub Actions |
 
 The same HR agent (`hr_agent/`) is the system-under-test in every module.
@@ -121,6 +121,11 @@ python module_3_agent_evals/replay_evals.py
 python module_5_online_evals/reference_free_evals.py
 python hr_agent/mocking.py
 python hr_agent/replay.py
+python module_6_improving_evals/system1_client.py
+python module_6_improving_evals/system1_judge.py
+python module_6_improving_evals/system1_labels.py
+python module_6_improving_evals/system1_alignment.py --self-test
+python module_6_improving_evals/system1_alignment.py   # phrase-list baseline vs labels
 ```
 
 ### Run a module (keys needed)
