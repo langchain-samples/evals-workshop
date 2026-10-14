@@ -1,7 +1,7 @@
-# Module 5 — Experiments vs. Tracing (Online Evals)
+# Module 6 — Experiments vs. Tracing (Online Evals)
 
 > Goal: understand the two places evals run — **offline experiments** on a curated
-> dataset (Modules 1–4) and **online evals** on live production traces — and run
+> dataset (Modules 1–5) and **online evals** on live production traces — and run
 > the online loop end-to-end on the HR agent.
 
 Everything so far has been *offline*: a fixed dataset with ground truth, scored in
@@ -12,7 +12,7 @@ close that gap by scoring production traces as they happen.
 
 ## Offline vs. online
 
-| | **Offline experiment** (Modules 1–4) | **Online eval** (this module) |
+| | **Offline experiment** (Modules 1–5) | **Online eval** (this module) |
 |---|---|---|
 | Data | curated dataset, fixed | live production traces |
 | Ground truth | yes — `reference_outputs` per example | **none** — must be reference-free |
@@ -38,7 +38,7 @@ Offline and online aren't rivals — they feed each other:
    curate those traces into the dataset
         │
         ▼
-   offline gate (Module 4) regression-tests them forever
+   offline gate (Module 5) regression-tests them forever
 ```
 
 A trace your online eval flags is the single most valuable thing to add to your
@@ -56,13 +56,13 @@ offline dataset — it's a real failure, not a hypothetical one.
 
 ```bash
 # Self-test the deterministic reference-free evaluators — no API key needed.
-python module_5_online_evals/reference_free_evals.py
+python module_6_online_evals/reference_free_evals.py
 
 # 1. Generate live traces (needs LANGSMITH + model keys).
-python module_5_online_evals/production_traffic.py
+python module_6_online_evals/production_traffic.py
 
 # 2. Score those traces and write feedback back onto them.
-python module_5_online_evals/score_traces.py
+python module_6_online_evals/score_traces.py
 #    --deterministic-only   skip the LLM judges (no model cost)
 #    --limit 50             score more traces
 ```
@@ -75,13 +75,13 @@ python module_5_online_evals/score_traces.py
    deflection rate creeping up, groundedness dipping after a prompt change.
 3. **The flywheel beats either half alone.** Online finds the failures; offline
    locks them down so they never come back.
-4. **Reference-free evaluators are reusable.** Module 7's production monitor runs
+4. **Reference-free evaluators are reusable.** Module 8's production monitor runs
    these exact evaluators on a schedule.
 
 ## Doing this for real: server-side rules
 
 `score_traces.py` runs the loop from your machine — perfect for learning and for
-the scheduled monitor in Module 7. In production you usually don't poll at all:
+the scheduled monitor in Module 8. In production you usually don't poll at all:
 you attach the evaluator to the project as a **rule / automation** so LangSmith
 runs it automatically on a sampled fraction of incoming traces (e.g. 10%), with no
 job to operate.
@@ -112,7 +112,7 @@ thread, and two are real three-turn conversations. Open the project, go to
 **Threads**, and open one.
 
 ```bash
-python module_5_online_evals/production_traffic.py
+python module_6_online_evals/production_traffic.py
 ```
 
 **What makes a thread show up.** Two pieces of run metadata, per the
@@ -139,7 +139,8 @@ manually. The docs cover each.)
   `recorded_calls_from_messages(result, last_turn_only=True)`, not the raw
   messages — otherwise turn 3 is credited with turns 1 and 2. The table at the top
   of [Module 3](../module_3_agent_evals/README.md) is what changes when an
-  evaluator sees a thread.
+  evaluator sees a thread, and [Module 4](../module_4_multi_turn/) evaluates
+  both shapes offline.
 - **It's new and has rough edges.** The view launched in late September 2026; one
   open SDK issue reports the first turn intermittently missing
   ([langsmith-sdk #3594](https://github.com/langchain-ai/langsmith-sdk/issues/3594)).
@@ -156,13 +157,13 @@ the policy text never mentions. Does the agent say so, or invent an answer?
 
 ## Beyond scoring: Engine
 
-Everything in Modules 5–6 is a loop you run by hand: find bad traces, look at them,
+Everything in Modules 6–7 is a loop you run by hand: find bad traces, look at them,
 label a few, curate a dataset. **LangSmith Engine** runs that loop for you against a
 tracing project — it clusters recurring failures into *issues*, diagnoses them, and
 proposes fixes and dataset examples. It reads the scores this module writes, so
 `score_traces.py`'s feedback on `hr-agent-production` is its input. The full
 walk-through, what it costs, and how it maps onto what you built, is in
-[Module 6](../module_6_improving_evals/README.md#engine-the-same-loop-automated).
+[Module 7](../module_7_improving_evals/README.md#engine-the-same-loop-automated).
 
-Next: **Module 6** — when the online judges disagree with your humans, align them
+Next: **Module 7** — when the online judges disagree with your humans, align them
 with annotation and few-shot examples.

@@ -1,4 +1,4 @@
-"""Module 5 — simulate production traffic so we have live traces to evaluate.
+"""Module 6 — simulate production traffic so we have live traces to evaluate.
 
 Online evals run on whatever your app actually produces in production. To make
 that concrete without a real deployment, this script runs the HR agent over a
@@ -7,7 +7,7 @@ asks you'd never put in a curated dataset — with **tracing enabled**, so each 
 lands as a trace in a LangSmith project.
 
 Once these traces exist, `score_traces.py` evaluates them with the reference-free
-evaluators (the online-eval loop), and Module 6 pushes a sample to an annotation
+evaluators (the online-eval loop), and Module 7 pushes a sample to an annotation
 queue for human review.
 
 Every run carries a ``thread_id`` — single questions are one-turn threads, and a
@@ -16,7 +16,7 @@ view** groups on: open a thread and you read the whole session (user messages,
 model replies, tool calls and results, once each, in order) instead of digging
 through nested runs. Click any step to drop into its underlying trace.
 
-Run:  python module_5_online_evals/production_traffic.py
+Run:  python module_6_online_evals/production_traffic.py
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from config import require_langsmith
 from hr_agent import run_conversation
-from module_5_online_evals.project import PRODUCTION_PROJECT
+from module_6_online_evals.project import PRODUCTION_PROJECT
 
 # Realistic production traffic: a mix of clean policy questions, typo'd and
 # colloquial phrasings, an ambiguous one, and an out-of-scope ask. This is the
@@ -107,7 +107,7 @@ def main() -> None:
     print("Open it in LangSmith → Tracing Projects → Threads, and open one of the "
           "3-turn threads in the Trajectory view.")
     print("Then run:")
-    print("  python module_5_online_evals/score_traces.py")
+    print("  python module_6_online_evals/score_traces.py")
 
 
 if __name__ == "__main__":

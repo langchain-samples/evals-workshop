@@ -1,4 +1,4 @@
-# Module 4 — Evaluations in CI
+# Module 5 — Evaluations in CI
 
 > Goal: turn the evals from Modules 2 & 3 into an automated gate that fails the
 > build when quality regresses — so prompt/model/tool changes are caught in the
@@ -24,12 +24,12 @@ a single LLM-judge call can be noisy but the mean is stable.
 
 ```bash
 # Per-example tests
-pytest module_4_ci/test_evals.py -v --langsmith-output
+pytest module_5_ci/test_evals.py -v --langsmith-output
 
 # Aggregate gates (exit non-zero on regression)
-python module_4_ci/ci_gate.py --suite single_turn
-python module_4_ci/ci_gate.py --suite agent
-python module_4_ci/ci_gate.py --suite tool_failures
+python module_5_ci/ci_gate.py --suite single_turn
+python module_5_ci/ci_gate.py --suite agent
+python module_5_ci/ci_gate.py --suite tool_failures
 ```
 
 ## The GitHub Actions workflow
@@ -80,16 +80,16 @@ Excluding scratch instead means a forgotten split shows up as a *false failure*
 
 ```bash
 # Default: gate everything except `scratch`; unassigned examples are gated.
-python module_4_ci/ci_gate.py --suite single_turn
+python module_5_ci/ci_gate.py --suite single_turn
 
 # Hard-fail if anyone left an example without a split.
-python module_4_ci/ci_gate.py --suite single_turn --require-splits
+python module_5_ci/ci_gate.py --suite single_turn --require-splits
 
 # More held-out splits.
-python module_4_ci/ci_gate.py --suite single_turn --held-out scratch --held-out wip
+python module_5_ci/ci_gate.py --suite single_turn --held-out scratch --held-out wip
 
 # Narrow to one split on purpose (opt-in; skips everything else).
-python module_4_ci/ci_gate.py --suite single_turn --split gate
+python module_5_ci/ci_gate.py --suite single_turn --split gate
 ```
 
 Every run prints its accounting, so coverage drift is visible in the CI log:

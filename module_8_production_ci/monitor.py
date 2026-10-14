@@ -1,6 +1,6 @@
-"""Module 7 — a production eval monitor that alerts on quality drift.
+"""Module 8 — a production eval monitor that alerts on quality drift.
 
-Module 4 gated a *pull request*: run the offline suite, fail the build if a
+Module 5 gated a *pull request*: run the offline suite, fail the build if a
 curated metric regresses. That protects you from bad merges. It does nothing about
 the agent quietly degrading in production — a provider model update, a creeping
 prompt change, a shift in what users ask. For that you need a gate on *production
@@ -8,18 +8,18 @@ behavior over time*.
 
 This monitor is that gate. On a schedule (see online-evals.yml) it:
   1. pulls the last N production traces,
-  2. scores them with the reference-free evaluators from Module 5,
+  2. scores them with the reference-free evaluators from Module 6,
   3. compares each metric's mean to a committed baseline (baseline.json), and
   4. exits non-zero — failing the scheduled job and triggering an alert — if any
      metric has drifted more than `tolerance` below baseline.
 
-It deliberately reuses Module 5's evaluators and trace extractors: the same
+It deliberately reuses Module 6's evaluators and trace extractors: the same
 reference-free checks that score a single trace online, aggregated and gated here.
 
 Run:
-    python module_7_production_ci/monitor.py                 # check vs baseline
-    python module_7_production_ci/monitor.py --deterministic-only
-    python module_7_production_ci/monitor.py --write-baseline # recapture baseline
+    python module_8_production_ci/monitor.py                 # check vs baseline
+    python module_8_production_ci/monitor.py --deterministic-only
+    python module_8_production_ci/monitor.py --write-baseline # recapture baseline
 """
 
 from __future__ import annotations
@@ -35,12 +35,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from langsmith import Client
 
 from config import require_langsmith
-from module_5_online_evals.project import PRODUCTION_PROJECT
-from module_5_online_evals.reference_free_evals import (
+from module_6_online_evals.project import PRODUCTION_PROJECT
+from module_6_online_evals.reference_free_evals import (
     DETERMINISTIC_ONLINE_EVALUATORS,
     ONLINE_EVALUATORS,
 )
-from module_5_online_evals.score_traces import _answer_from_run, _question_from_run
+from module_6_online_evals.score_traces import _answer_from_run, _question_from_run
 
 BASELINE_PATH = Path(__file__).resolve().parent / "baseline.json"
 
@@ -83,7 +83,7 @@ def main() -> None:
     if not runs:
         raise SystemExit(
             f"No traces in project '{args.project}'. Generate some with "
-            "module_5_online_evals/production_traffic.py."
+            "module_6_online_evals/production_traffic.py."
         )
 
     means = aggregate(runs, evaluators)

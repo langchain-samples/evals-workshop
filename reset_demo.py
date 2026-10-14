@@ -19,9 +19,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from langsmith import Client
 
 from config import require_langsmith
-from module_5_online_evals.project import PRODUCTION_PROJECT
-from module_6_improving_evals.annotation_queue import QUEUE_NAME
-from module_6_improving_evals.curate_dataset import DATASET_NAME as CURATED_DATASET
+from module_6_online_evals.project import PRODUCTION_PROJECT
+from module_7_improving_evals.annotation_queue import QUEUE_NAME
+from module_7_improving_evals.curate_dataset import DATASET_NAME as CURATED_DATASET
 
 
 def main() -> None:
@@ -57,7 +57,7 @@ def main() -> None:
     except Exception as e:
         print(f"Curated dataset not deleted ({type(e).__name__}: {e}).")
 
-    print("\nReset complete. Re-run module_5_online_evals/production_traffic.py to repopulate.")
+    print("\nReset complete. Re-run module_6_online_evals/production_traffic.py to repopulate.")
 
 
 if __name__ == "__main__":

@@ -14,8 +14,9 @@ Worth pinning down before anything else, because it is the most common misread
 of this module. Every example in `datasets.py` is a **single user message**, and
 `run_agent` does one `agent.invoke`. So "trajectory" means the ordered tool
 calls *inside one turn* — multi-**step**, single-**turn**. None of this module's
-evals run a multi-turn thread. Threads first appear in [Module 5](../module_5_online_evals/),
-on live traffic, where LangSmith's Trajectory view reads them (see the end of this file).
+evals run a multi-turn thread. [Module 4](../module_4_multi_turn/) evaluates conversations,
+and [Module 6](../module_6_online_evals/) shows threads on live traffic, where LangSmith's
+Trajectory view reads them (see the end of this file).
 
 The distinction matters the moment you take these evaluators to a real
 conversational agent, because the four below do not all mean the same thing at
@@ -40,6 +41,7 @@ actually happened.
 The structural fix, if you go multi-turn: make each eval example **be a turn**,
 with the prior messages as input context. Then the run boundary and the
 assertion boundary are the same thing and the question stops arising.
+[Module 4](../module_4_multi_turn/) does exactly this.
 
 ## Three things to evaluate about a trajectory
 
@@ -97,8 +99,9 @@ python module_3_agent_evals/run_eval.py
 > a `trajectory` evaluator family (strict / unordered / superset / subset) plus
 > an LLM trajectory judge. Same ideas as here, batteries included.
 
-Next: **Module 4** — wire these experiments into CI so a regression fails the
-build before it reaches `main`.
+Next: **Module 4** — evaluate conversations: follow-ups, corrections, and files
+that arrive across turns. Then **Module 5** wires these experiments into CI so a
+regression fails the build before it reaches `main`.
 
 ---
 
@@ -266,7 +269,7 @@ result, not the recorded world. So a miss is a *finding*, not noise. Two policie
   Re-record when the real system's behavior changes in a way you care about.
 - **A recording is a copy of production data.** For a real HR agent that means
   employee records. Nothing here redacts them; see the PII notes in
-  [Module 6](../module_6_improving_evals/).
+  [Module 7](../module_7_improving_evals/).
 
 ### Getting a recording from a real trace
 
@@ -298,7 +301,7 @@ nested runs. Click any step to open its underlying trace.
 
 It needs traces grouped into **threads** (a shared `thread_id`). This module's
 evals are single-turn, so there's nothing to group here; generate real threads
-with [Module 5](../module_5_online_evals/)'s traffic script, then open one. The
+with [Module 6](../module_6_online_evals/)'s traffic script, then open one. The
 same view is where you'd eyeball *why* a `trajectory_efficiency` score is low.
 
 Code-side, `hr_agent.run_conversation(turns)` is how a thread gets made: one

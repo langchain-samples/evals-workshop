@@ -1,4 +1,4 @@
-# Module 6 — Improving Evals (Annotation & Few-Shot)
+# Module 7 — Improving Evals (Annotation & Few-Shot)
 
 > Goal: when your LLM judge disagrees with your humans, fix it — without
 > fine-tuning. Capture human judgment with an **annotation queue**, then **align**
@@ -20,7 +20,7 @@ The loop that fixes this:
         │                      ├──►  measure judge agreement ("evaluate the evaluator")
         │                      └──►  feed back as few-shot examples ──►  aligned judge
         ▼
-   curate the best into your offline dataset (the flywheel from Module 5)
+   curate the best into your offline dataset (the flywheel from Module 6)
 ```
 
 ## What's here
@@ -38,12 +38,12 @@ The loop that fixes this:
 
 ```bash
 # Measure judge↔human agreement, zero-shot vs few-shot (needs a model key).
-python module_6_improving_evals/judge_alignment.py
+python module_7_improving_evals/judge_alignment.py
 
-python module_6_improving_evals/few_shot_judge.py
+python module_7_improving_evals/few_shot_judge.py
 # Push flagged production traces to an annotation queue for labeling.
-# (Run module_5_online_evals/production_traffic.py first to create traces.)
-python module_6_improving_evals/annotation_queue.py
+# (Run module_6_online_evals/production_traffic.py first to create traces.)
+python module_7_improving_evals/annotation_queue.py
 #   --all     queue recent traces, not just the flagged ones
 ```
 
@@ -58,13 +58,13 @@ last arrow is `curate_dataset.py`:
 
 ```bash
 # Traces your online evals scored below 1 — the failures worth locking in.
-python module_6_improving_evals/curate_dataset.py --flagged
+python module_7_improving_evals/curate_dataset.py --flagged
 
 # Traces a human labeled in the annotation queue — the gold ones.
-python module_6_improving_evals/curate_dataset.py --labeled
+python module_7_improving_evals/curate_dataset.py --labeled
 
 # See what would be added without writing anything.
-python module_6_improving_evals/curate_dataset.py --all --dry-run
+python module_7_improving_evals/curate_dataset.py --all --dry-run
 ```
 
 It writes to `hr-onboarding/policy-qa/from-production`, and every example
@@ -174,7 +174,7 @@ Straight from the docs — check them for anything newer:
    toggle **Enable Engine**, and accept the AI-features terms. (On self-hosted, an
    operator has to enable it in the Helm chart first.)
 2. **Any user** then, per project: sidebar **Engine** → pick the project
-   (`hr-agent-production` after running Module 5) → optionally connect a GitHub repo
+   (`hr-agent-production` after running Module 6) → optionally connect a GitHub repo
    → **Start Analyzing**. The first analysis can take **up to 20 minutes**, so start
    it early. Review the agent overview it writes, then **Accept & Continue**.
 
@@ -218,5 +218,5 @@ the judge — the productized version of what `few_shot_judge.py` does by hand.
 pair queues + datasets + `[openevals](https://github.com/langchain-ai/openevals)`
 judges, which already accept few-shot examples.
 
-Next: **Module 7** — run the reference-free evals from Module 5 on a schedule as a
+Next: **Module 8** — run the reference-free evals from Module 6 on a schedule as a
 production monitor that alerts when quality drifts.

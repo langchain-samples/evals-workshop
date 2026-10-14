@@ -24,7 +24,7 @@ Start at the top. Stop at the first rung that can answer your question.
 | 5 | Can a **heuristic** approximate it well enough — keywords, regex, thresholds? | A rule with a *known* error rate | Free · flakes only where the rule is crude | `not_deflected`, `reports_tool_failure` |
 | 6 | Is it a **narrow, typed call about meaning** you can read straight off the text — a yes/no, one of a few labels, a rating on a short scale — that you need to make at **volume**? | **System 1 model** (e.g. Jev) — [see below](#system-1-models-jev-the-rung-between-a-rule-and-an-llm-judge) | Cents per thousand · low variance · no explanation | `system1_judge.py`, `system1_alignment.py` — [try it](#try-it-on-this-repo) |
 | 7 | Is it genuinely **open-ended** — tone, groundedness of free text, "was this a reasonable approach" — or does it need a **written rationale**? | LLM judge | $ per run · noisy | `module_2/llm_judge_evals.py`, `llm_trajectory_judge.py` |
-| 8 | Is it **high-stakes**, or are you unsure the judge is right? | Human review | Slow · the ground truth | Module 6: annotation queues |
+| 8 | Is it **high-stakes**, or are you unsure the judge is right? | Human review | Slow · the ground truth | Module 7: annotation queues |
 
 Rungs 1–5 are code. Rungs 6 and 7 are the two that put a model in the loop — a
 fast, typed classifier and a slow, reasoning generator — and rung 8 is what tells
@@ -83,7 +83,7 @@ set is small and known, and you need to ask it a lot. In the HR agent:
 | Does the reply tell the user the action failed or couldn't be completed? | Noul | `reports_tool_failure` — a phrase list (rung 5) |
 | Did the agent answer, ask for clarification, decline as out of scope, or deflect? | Choice | `not_deflected` — a phrase list |
 | Does the reply disclose another employee's private data? | Noul | nothing — a rule can't see it |
-| What is this production message actually asking for — policy, an onboarding action, something out of scope? | Choice | nothing — useful for slicing [Module 5](../module_5_online_evals/) traffic |
+| What is this production message actually asking for — policy, an onboarding action, something out of scope? | Choice | nothing — useful for slicing [Module 6](../module_6_online_evals/) traffic |
 
 Those are the phrase-list heuristics from rung 5 hitting their ceiling. A phrase
 list misses "I wasn't able to get that done"; a System 1 model reads meaning. And
@@ -113,7 +113,7 @@ Per TypeSafe's and HoneyHive's own guidance, not for:
   prove a handoff happened. Check the tool call.
 - **Finding failure modes you haven't seen.** It answers the questions you wrote.
   Discovering new problems starts with humans reading traces (and, for this loop,
-  [Engine](../module_6_improving_evals/README.md#engine-the-same-loop-automated)).
+  [Engine](../module_7_improving_evals/README.md#engine-the-same-loop-automated)).
 - **Being an untested security gate.** Text in the input that argues for its own
   classification can steer the answer.
 
@@ -151,7 +151,7 @@ is mainly a **cost** tool. When the System 1 model is confidently wrong, an LLM 
 to be wrong in the same place, so a bigger model isn't the safety net. For the
 verdicts that matter, escalate the *uncertain* ones to a **human** (rung 8) — for
 example a Noul probability in the 0.4–0.6 band, or an explicit `unclear` option on a
-Choice, routed to an [annotation queue](../module_6_improving_evals/) — and tune the
+Choice, routed to an [annotation queue](../module_7_improving_evals/) — and tune the
 band on labeled examples. Use confidence for routing, not as proof the answer is
 right.
 
@@ -166,9 +166,9 @@ right.
    32k for state plus the longest question; irrelevant context also hurts accuracy
    inside those limits.
 4. **Measure it against human labels before you trust it** — same "evaluate the
-   evaluator" step as any judge ([Module 6](../module_6_improving_evals/)), with
+   evaluator" step as any judge ([Module 7](../module_7_improving_evals/)), with
    partial-answer and adversarial cases included, and a held-out slice you never
-   tuned on. `system1_alignment.py` does this for a decision model; Module 6's `judge_alignment.py`
+   tuned on. `system1_alignment.py` does this for a decision model; Module 7's `judge_alignment.py`
    does it for the few-shot LLM judge. The procedure is the same: agreement with humans *is* its accuracy.
 5. **Pin the version.** `jev-latest` moves when TypeSafe ships a release. Select the
    versioned ID you validated (HoneyHive's example: `jev-1.13.0`) and re-check
@@ -199,7 +199,7 @@ right.
 - **Data retention — decide before you connect.** TypeSafe does *not* offer zero
   data retention: prompts and outputs sent to Jev may be retained by the provider.
   This repo's traces are HR-agent traces; a real one carries employee PII. Same gate
-  as [curation](../module_6_improving_evals/) and Engine. Separately, running an
+  as [curation](../module_7_improving_evals/) and Engine. Separately, running an
   online evaluator on any run upgrades that trace to extended retention, which
   changes trace pricing.
 - **An alternative provider.** The docs also list **SemIf**, which runs through the
@@ -289,7 +289,7 @@ honest:
    already failed, the judge's opinion of the same answer adds cost, not
    information.
 4. **Measure agreement with humans before you rely on it** — the "evaluate the
-   evaluator" step in [Module 6](../module_6_improving_evals/). A judge you haven't
+   evaluator" step in [Module 7](../module_7_improving_evals/). A judge you haven't
    measured is a guess with a decimal point.
 5. **Never grade the judge on its own few-shot examples.**
 6. **Version the prompt.** Edit a judge and every historical score quietly

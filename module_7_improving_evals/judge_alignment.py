@@ -1,4 +1,4 @@
-"""Module 6 — measure (and improve) how well your judge agrees with humans.
+"""Module 7 — measure (and improve) how well your judge agrees with humans.
 
 A judge you don't trust is worse than no judge. So before you rely on an LLM judge
 in production, **evaluate the evaluator**: score a set of outputs your humans have
@@ -15,7 +15,7 @@ on, so we're never grading the judge on the examples we taught it with. You shou
 see the few-shot judge agree with humans more often — that's alignment, no
 fine-tuning required.
 
-Run:  python module_6_improving_evals/judge_alignment.py
+Run:  python module_7_improving_evals/judge_alignment.py
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from config import require_langsmith
-from module_6_improving_evals.few_shot_judge import judge_house_style
+from module_7_improving_evals.few_shot_judge import judge_house_style
 
 # A human-labeled "golden" set for the HR house style. These are the labels real
 # reviewers produced — the ground truth the judge must match. The convention they

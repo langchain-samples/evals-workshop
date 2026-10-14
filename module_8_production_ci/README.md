@@ -1,10 +1,10 @@
-# Module 7 — Evals in CI/CD (Production Monitoring)
+# Module 8 — Evals in CI/CD (Production Monitoring)
 
 > Goal: gate not just your *pull requests* but your *production behavior*. Run the
-> reference-free evals from Module 5 on a schedule, compare to a baseline, and
+> reference-free evals from Module 6 on a schedule, compare to a baseline, and
 > alert when quality drifts.
 
-Module 4 put evals in CI as an **offline gate on a PR**: did this change regress my
+Module 5 put evals in CI as an **offline gate on a PR**: did this change regress my
 curated dataset? That's necessary but not sufficient. Plenty of regressions never
 show up in a diff — a provider silently updates the model behind your API, a
 retrieval source goes stale, real-world questions shift. Your offline suite is
@@ -13,7 +13,7 @@ green and production is quietly getting worse.
 The fix is a second gate, on the other side of the release: an **online monitor**
 that watches live traffic over time.
 
-| | **Offline gate** (Module 4) | **Online monitor** (this module) |
+| | **Offline gate** (Module 5) | **Online monitor** (this module) |
 |---|---|---|
 | Trigger | every PR / push | a schedule (cron) |
 | Shipped here as | manual-only (`workflow_dispatch`) | manual-only (`workflow_dispatch`) |
@@ -26,7 +26,7 @@ that watches live traffic over time.
 
 | File | What it teaches |
 |------|-----------------|
-| `monitor.py` | Pull the last N production traces, score them with Module 5's reference-free evals, and **exit non-zero if any metric drifted below baseline**. |
+| `monitor.py` | Pull the last N production traces, score them with Module 6's reference-free evals, and **exit non-zero if any metric drifted below baseline**. |
 | `baseline.json` | The committed baseline means + drift `tolerance`. Regenerate after an intentional, reviewed quality change. |
 | `../.github/workflows/online-evals.yml` | Runs the monitor on demand. The daily `schedule:` cron is **commented out** — uncomment it to arm the monitor for real. |
 
@@ -34,15 +34,15 @@ that watches live traffic over time.
 
 ```bash
 # Check the last 50 production traces against baseline.json.
-python module_7_production_ci/monitor.py
+python module_8_production_ci/monitor.py
 #   --deterministic-only   skip LLM judges (no model cost)
 #   --limit 100            score more traces
 
 # Recapture the baseline after an intentional, reviewed quality change.
-python module_7_production_ci/monitor.py --write-baseline
+python module_8_production_ci/monitor.py --write-baseline
 ```
 
-(Generate traffic first with `module_5_online_evals/production_traffic.py` if the
+(Generate traffic first with `module_6_online_evals/production_traffic.py` if the
 project is empty.)
 
 ## Setting the baseline & tolerance (the judgment call)
@@ -64,7 +64,7 @@ project is empty.)
    catches *production* degradation the diff never showed.
 2. **Drift vs. baseline, not absolute thresholds.** In production you care about
    *change* — "groundedness fell" matters more than its exact value.
-3. **Reuse the online evaluators.** The monitor runs Module 5's reference-free
+3. **Reuse the online evaluators.** The monitor runs Module 6's reference-free
    checks verbatim — score one trace online, aggregate many on a schedule.
 4. **Mind cost and cadence.** LLM judges cost money per trace. Sample, run on a
    schedule (not per-request), and use `--deterministic-only` for a free
@@ -87,6 +87,6 @@ this server-side, no job to run:
 ---
 
 This is the end of **Session 2**. You now have the full production loop: offline
-experiments (Session 1) → online evals on live traces (Module 5) → human
-annotation + judge alignment (Module 6) → a scheduled production monitor (Module
+experiments (Session 1) → online evals on live traces (Module 6) → human
+annotation + judge alignment (Module 7) → a scheduled production monitor (Module
 7), all feeding the dataset flywheel.
