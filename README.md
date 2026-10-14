@@ -35,6 +35,7 @@ You don't have to read in order. Pick the row that sounds like your problem:
 | have datasets whose **ground truth goes stale** because the underlying data keeps changing | [Module 3 → stale data](module_3_agent_evals/README.md#stale-data-when-the-world-changes-under-your-ground-truth) | [Module 4](module_4_ci/) to gate on it |
 | reach for an **LLM judge** by default | [Choosing an evaluator](module_2_single_turn/choosing-an-evaluator.md) | [Module 6](module_6_improving_evals/) to validate the ones you keep |
 | have **agents in production** and want to see what they're doing | [Module 5 → Trajectory view](module_5_online_evals/README.md#reading-production-sessions-the-trajectory-view) | [Module 6 → Engine](module_6_improving_evals/README.md#engine-the-same-loop-automated) |
+| evaluate inputs that **aren't text**: images, or several files per example | [Module 2 → multimodal](module_2_single_turn/README.md#multimodal-evals-images-and-attachments) | [Module 6](module_6_improving_evals/) to validate the image judge |
 | are **wiring evals into CI** | [Module 4](module_4_ci/) | [Module 7](module_7_production_ci/) for scheduled monitoring |
 
 ### Which evaluator should I use?
@@ -68,7 +69,7 @@ Fundamentals  ->  Single-turn evals -> Agent evals  ->  Evals in   │  Online e
 | Module | You learn to… | Evaluators introduced |
 |--------|---------------|------------------------|
 | **[1 — Fundamentals](module_1_fundamentals/)** | Name the 4 parts of any eval; run one end-to-end. | first deterministic check |
-| **[2 — Single-turn](module_2_single_turn/)** | Judge a single answer, and **decide when a judge is warranted at all**. | deterministic (facts, **shape validation**) + LLM-judge (correctness, groundedness, tone) + a [decision ladder](module_2_single_turn/choosing-an-evaluator.md) + a **System 1 (Jev) judge vs labels** example |
+| **[2 — Single-turn](module_2_single_turn/)** | Judge a single answer, and **decide when a judge is warranted at all**. | deterministic (facts, **shape validation**) + LLM-judge (correctness, groundedness, tone) + a [decision ladder](module_2_single_turn/choosing-an-evaluator.md) + a **System 1 (Jev) judge vs labels** example + **multimodal** (receipt images, several attachments per example, an image-aware judge) |
 | **[3 — Agent evals](module_3_agent_evals/)** | Judge the *trajectory* and tool calls, not just the answer. Mock tool outputs to reach failure states. **Replay recorded tool outputs when the data changes under your ground truth.** | trajectory (exact / required / forbidden / efficiency), tool-args, LLM trajectory judge, **failure handling**, **point-in-time replay + invariants** |
 | **[4 — CI](module_4_ci/)** | Gate a build on eval results. | pytest per-example gate + aggregate threshold gate + GitHub Actions |
 
