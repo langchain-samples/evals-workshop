@@ -1,6 +1,6 @@
 """Evaluate the evaluator — for a System 1 model this time.
 
-Module 6's `judge_alignment.py` asks how well an LLM judge agrees with human labels. This asks
+Module 7's `judge_alignment.py` asks how well an LLM judge agrees with human labels. This asks
 the same of two cheaper ways to answer one question — "did the reply admit the
 tool failed?":
 

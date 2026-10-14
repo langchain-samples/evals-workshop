@@ -1,6 +1,6 @@
 name: Online Evals (production monitor)
 
-# Module 7's counterpart to evals.yml. Where evals.yml gates a PR with the OFFLINE
+# Module 8's counterpart to evals.yml. Where evals.yml gates a PR with the OFFLINE
 # suite, this runs the ONLINE monitor: score recent production traces, compare to
 # the committed baseline, and fail (alert) on quality drift.
 #
@@ -40,7 +40,7 @@ jobs:
       # Score the last 50 production traces and gate on drift vs baseline.json.
       # A drifted metric exits non-zero, which fails this step and the run.
       - name: Production eval monitor
-        run: python module_7_production_ci/monitor.py --limit 50
+        run: python module_8_production_ci/monitor.py --limit 50
 
       # Optional: turn a failed monitor into a real alert. Uncomment and wire to
       # your channel. `if: failure()` runs this only when the monitor flagged drift.

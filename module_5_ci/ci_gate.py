@@ -1,4 +1,4 @@
-"""Module 4 — the CI gate.
+"""Module 5 — the CI gate.
 
 Run an experiment over a dataset, aggregate the scores, and EXIT NON-ZERO if
 any metric falls below its threshold. That non-zero exit is what fails a CI
@@ -12,13 +12,13 @@ By default the gate runs on every example EXCEPT the held-out (scratch) splits,
 so an example nobody assigned a split to still gets gated. See resolve_data.
 
 Usage:
-    python module_4_ci/ci_gate.py --suite single_turn
-    python module_4_ci/ci_gate.py --suite agent
-    python module_4_ci/ci_gate.py --suite tool_failures
-    python module_4_ci/ci_gate.py --suite single_turn --require-splits
-    python module_4_ci/ci_gate.py --suite single_turn --held-out scratch --held-out wip
-    python module_4_ci/ci_gate.py --suite single_turn --split gate   # opt-in, narrower
-    python module_4_ci/ci_gate.py --suite single_turn --threshold 0.9
+    python module_5_ci/ci_gate.py --suite single_turn
+    python module_5_ci/ci_gate.py --suite agent
+    python module_5_ci/ci_gate.py --suite tool_failures
+    python module_5_ci/ci_gate.py --suite single_turn --require-splits
+    python module_5_ci/ci_gate.py --suite single_turn --held-out scratch --held-out wip
+    python module_5_ci/ci_gate.py --suite single_turn --split gate   # opt-in, narrower
+    python module_5_ci/ci_gate.py --suite single_turn --threshold 0.9
 """
 
 from __future__ import annotations

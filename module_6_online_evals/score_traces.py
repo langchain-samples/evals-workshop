@@ -1,18 +1,18 @@
-"""Module 5 — the online-eval loop: score live traces and write feedback back.
+"""Module 6 — the online-eval loop: score live traces and write feedback back.
 
 This is what an online eval *is*, mechanically: pull recent production traces,
 run reference-free evaluators over each, and attach the scores to the trace as
 feedback. In LangSmith you'd typically run this continuously as a server-side
 **rule** (auto-scores a sample of incoming traces — see the README), but the loop
 below is the portable, inspectable version of the same idea, and it's exactly
-what Module 7's scheduled monitor reuses.
+what Module 8's scheduled monitor reuses.
 
 Compared to an offline `client.evaluate(...)` experiment:
   - the data is live traces, not a fixed dataset;
   - the evaluators take only (inputs, outputs) — no reference (see reference_free_evals.py);
   - results are written as `create_feedback` on each run, not collected into one experiment.
 
-Run:  python module_5_online_evals/score_traces.py [--limit 20] [--deterministic-only]
+Run:  python module_6_online_evals/score_traces.py [--limit 20] [--deterministic-only]
 """
 
 from __future__ import annotations
@@ -27,8 +27,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from langsmith import Client
 
 from config import require_langsmith
-from module_5_online_evals.project import PRODUCTION_PROJECT
-from module_5_online_evals.reference_free_evals import (
+from module_6_online_evals.project import PRODUCTION_PROJECT
+from module_6_online_evals.reference_free_evals import (
     DETERMINISTIC_ONLINE_EVALUATORS,
     ONLINE_EVALUATORS,
 )

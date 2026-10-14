@@ -44,7 +44,7 @@ remote data that ends up inside an LLM prompt as a tool result. Same posture as
 tools, payloads are handled with ``json`` only (never ``eval``/``pickle``/
 ``langchain_core.load``), payloads and call counts are capped, and a replay never
 executes anything. Traces from a real HR agent carry employee PII; nothing here
-redacts it. See the note in ``module_6_improving_evals/curate_dataset.py``.
+redacts it. See the note in ``module_7_improving_evals/curate_dataset.py``.
 """
 
 from __future__ import annotations

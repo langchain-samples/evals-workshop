@@ -48,8 +48,9 @@ def build_agent(
     the world around it changes. See hr_agent/mocking.py and hr_agent/replay.py.
 
     ``checkpointer`` is what makes a conversation a *thread*: with one, the agent
-    remembers earlier turns that share a ``thread_id``. Without it (the default,
-    and what every eval in Modules 1-4 uses) each invoke is independent.
+    remembers earlier turns that share a ``thread_id``. Without it (the default)
+    each invoke is independent. Most evals here pass any history in the input
+    instead; Module 4's simulated user is the one that needs a checkpointer.
     """
     return create_agent(
         model=model,

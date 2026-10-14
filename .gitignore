@@ -38,7 +38,7 @@ env/
 #      (e.g. Anthropic-Organization-Id) and internal gateway URLs;
 #   2. cassette filenames are keyed on the LangSmith *dataset UUID*, so a
 #      cassette recorded in one workspace never replays in another anyway.
-# Each user records their own on first run. See module_4_ci/README.md.
+# Each user records their own on first run. See module_5_ci/README.md.
 fixtures/cassettes/
 
 # --- Facilitator-only notes (not for public sharing) ---

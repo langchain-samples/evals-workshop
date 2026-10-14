@@ -1,6 +1,6 @@
-"""Module 5 — reference-free evaluators (for online evals on live traces).
+"""Module 6 — reference-free evaluators (for online evals on live traces).
 
-Offline experiments (Modules 1–4) have a `reference_outputs` to grade against —
+Offline experiments (Modules 1–5) have a `reference_outputs` to grade against —
 the dataset's ground truth. **Online** evals don't: a production trace is a real
 user's question the agent has never seen, with no pre-written "right answer". So
 online evaluators must judge an output using only what's *in the trace itself*

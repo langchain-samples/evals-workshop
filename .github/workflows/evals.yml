@@ -1,6 +1,6 @@
 name: Evals
 
-# Module 4's reference CI gate: run the offline eval suite and fail the build
+# Module 5's reference CI gate: run the offline eval suite and fail the build
 # when quality regresses, so a bad prompt/model/tool change is caught in the PR.
 #
 # ─────────────────────────────────────────────────────────────────────────────
@@ -57,7 +57,7 @@ jobs:
 
       # --- Per-example gate: granular pass/fail, shows which example broke ---
       - name: Per-example eval tests
-        run: pytest module_4_ci/test_evals.py -v --langsmith-output
+        run: pytest module_5_ci/test_evals.py -v --langsmith-output
 
       # --- Aggregate gate: dataset-level thresholds per metric ---
       # The gate runs on every example EXCEPT the held-out `scratch` split, so
@@ -68,11 +68,11 @@ jobs:
       # fails safe.
       # Drop --require-splits if you'd rather have a warning than a hard failure.
       - name: Single-turn aggregate gate
-        run: python module_4_ci/ci_gate.py --suite single_turn --require-splits
+        run: python module_5_ci/ci_gate.py --suite single_turn --require-splits
 
       - name: Agent aggregate gate
-        run: python module_4_ci/ci_gate.py --suite agent --require-splits
+        run: python module_5_ci/ci_gate.py --suite agent --require-splits
 
       # --- Failure handling, via mocked tool outputs (no real systems touched) ---
       - name: Tool-failure gate (mocked)
-        run: python module_4_ci/ci_gate.py --suite tool_failures --require-splits
+        run: python module_5_ci/ci_gate.py --suite tool_failures --require-splits

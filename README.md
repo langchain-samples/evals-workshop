@@ -9,9 +9,9 @@ Stack: **Python + LangChain (`create_agent`) + LangSmith**.
 
 The workshop runs in two sessions:
 
-- **Session 1 — Foundations (Modules 1–4):** what an eval is, single-turn and
-  agent evals, and gating a PR with an offline suite.
-- **Session 2 — Evals for Production (Modules 5–7):** online evals on live
+- **Session 1 — Foundations (Modules 1–5):** what an eval is, single-turn,
+  agent, and multi-turn evals, and gating a PR with an offline suite.
+- **Session 2 — Evals for Production (Modules 6–8):** online evals on live
   traces, improving evaluators with annotation + few-shot, and monitoring
   production for quality drift.
 
@@ -32,11 +32,12 @@ You don't have to read in order. Pick the row that sounds like your problem:
 | If you… | Start with | Then |
 |---|---|---|
 | are new to evals | [Module 1](module_1_fundamentals/) | in order |
-| have datasets whose **ground truth goes stale** because the underlying data keeps changing | [Module 3 → stale data](module_3_agent_evals/README.md#stale-data-when-the-world-changes-under-your-ground-truth) | [Module 4](module_4_ci/) to gate on it |
-| reach for an **LLM judge** by default | [Choosing an evaluator](module_2_single_turn/choosing-an-evaluator.md) | [Module 6](module_6_improving_evals/) to validate the ones you keep |
-| have **agents in production** and want to see what they're doing | [Module 5 → Trajectory view](module_5_online_evals/README.md#reading-production-sessions-the-trajectory-view) | [Module 6 → Engine](module_6_improving_evals/README.md#engine-the-same-loop-automated) |
-| evaluate inputs that **aren't text**: images, or several files per example | [Module 2 → multimodal](module_2_single_turn/README.md#multimodal-evals-images-and-attachments) | [Module 6](module_6_improving_evals/) to validate the image judge |
-| are **wiring evals into CI** | [Module 4](module_4_ci/) | [Module 7](module_7_production_ci/) for scheduled monitoring |
+| have datasets whose **ground truth goes stale** because the underlying data keeps changing | [Module 3 → stale data](module_3_agent_evals/README.md#stale-data-when-the-world-changes-under-your-ground-truth) | [Module 5](module_5_ci/) to gate on it |
+| reach for an **LLM judge** by default | [Choosing an evaluator](module_2_single_turn/choosing-an-evaluator.md) | [Module 7](module_7_improving_evals/) to validate the ones you keep |
+| have **agents in production** and want to see what they're doing | [Module 6 → Trajectory view](module_6_online_evals/README.md#reading-production-sessions-the-trajectory-view) | [Module 7 → Engine](module_7_improving_evals/README.md#engine-the-same-loop-automated) |
+| evaluate inputs that **aren't text**: images, or several files per example | [Module 2 → multimodal](module_2_single_turn/README.md#multimodal-evals-images-and-attachments) | [Module 7](module_7_improving_evals/) to validate the image judge |
+| have a **conversational** agent: follow-ups, corrections, files sent over several messages | [Module 4](module_4_multi_turn/) | [Module 6 → Trajectory view](module_6_online_evals/README.md#reading-production-sessions-the-trajectory-view) for real threads |
+| are **wiring evals into CI** | [Module 5](module_5_ci/) | [Module 8](module_8_production_ci/) for scheduled monitoring |
 
 ### Which evaluator should I use?
 
@@ -50,7 +51,7 @@ Start at the top and stop at the first row that answers your question:
 | **high-stakes**, or you aren't sure the judge is right | **Human review** | The ground truth the others are measured against. Send low-confidence answers here. |
 
 Whichever you pick, measure it against labeled examples on a held-out slice before
-you trust it ([Module 6](module_6_improving_evals/)). The System 1 row is the newest
+you trust it ([Module 7](module_7_improving_evals/)). The System 1 row is the newest
 and least proven: Jev is early access, sends text to a third party, and the example
 here hasn't been run against the live API. The full ladder, worked examples, and that
 example are in [Choosing an evaluator](module_2_single_turn/choosing-an-evaluator.md).
@@ -58,10 +59,10 @@ example are in [Choosing an evaluator](module_2_single_turn/choosing-an-evaluato
 ## The arc
 
 ```
-SESSION 1 — Foundations                                    SESSION 2 — Evals for Production
-Module 1          Module 2            Module 3          Module 4   │  Module 5            Module 6              Module 7
-Fundamentals  ->  Single-turn evals -> Agent evals  ->  Evals in   │  Online evals    ->  Improving evals   ->  Production
-(the 4 parts)     (judge the answer)  (the process)     CI (gate)  │  (live traces)       (annotate+few-shot)    monitor (drift)
+SESSION 1 — Foundations                                                     SESSION 2 — Evals for Production
+Module 1        Module 2           Module 3         Module 4         Module 5   │  Module 6          Module 7             Module 8
+Fundamentals -> Single-turn     -> Agent evals   -> Multi-turn    -> Evals in   │  Online evals   -> Improving evals   -> Production
+(the 4 parts)   (judge the answer) (the process)    (conversations)  CI (gate)  │  (live traces)     (annotate+few-shot)   monitor (drift)
 ```
 
 ### Session 1 — Foundations
@@ -71,15 +72,16 @@ Fundamentals  ->  Single-turn evals -> Agent evals  ->  Evals in   │  Online e
 | **[1 — Fundamentals](module_1_fundamentals/)** | Name the 4 parts of any eval; run one end-to-end. | first deterministic check |
 | **[2 — Single-turn](module_2_single_turn/)** | Judge a single answer, and **decide when a judge is warranted at all**. | deterministic (facts, **shape validation**) + LLM-judge (correctness, groundedness, tone) + a [decision ladder](module_2_single_turn/choosing-an-evaluator.md) + a **System 1 (Jev) judge vs labels** example + **multimodal** (receipt images, several attachments per example, an image-aware judge) |
 | **[3 — Agent evals](module_3_agent_evals/)** | Judge the *trajectory* and tool calls, not just the answer. Mock tool outputs to reach failure states. **Replay recorded tool outputs when the data changes under your ground truth.** | trajectory (exact / required / forbidden / efficiency), tool-args, LLM trajectory judge, **failure handling**, **point-in-time replay + invariants** |
-| **[4 — CI](module_4_ci/)** | Gate a build on eval results. | pytest per-example gate + aggregate threshold gate + GitHub Actions |
+| **[4 — Multi-turn](module_4_multi_turn/)** | Grade one turn with the conversation held fixed; grade whole threads with a simulated user; handle files that arrive across turns. | turn-scoped tool-call checks (expected / forbidden, **context bleed**), context-use judge, **simulated user** + thread-level evaluators, **multimodal multi-turn** (attachments referenced per turn) |
+| **[5 — CI](module_5_ci/)** | Gate a build on eval results. | pytest per-example gate + aggregate threshold gate + GitHub Actions |
 
 ### Session 2 — Evals for Production
 
 | Module | You learn to… | What's new |
 |--------|---------------|------------|
-| **[5 — Online evals](module_5_online_evals/)** | Tell offline experiments from online evals; score *live traces* with no ground truth; read whole sessions. | reference-free evaluators, scoring traces + writing feedback, the data flywheel, **threads + the Trajectory view** |
-| **[6 — Improving evals](module_6_improving_evals/)** | Align an LLM judge to your humans; promote traces into a dataset; see what **LangSmith Engine** automates of that loop. | annotation queues, "evaluate the evaluator", **few-shot judge alignment**, **production→dataset curation**, **Engine** |
-| **[7 — Production CI](module_7_production_ci/)** | Monitor production for quality drift. | scheduled monitor, baseline/drift alerting, scheduled GitHub Actions |
+| **[6 — Online evals](module_6_online_evals/)** | Tell offline experiments from online evals; score *live traces* with no ground truth; read whole sessions. | reference-free evaluators, scoring traces + writing feedback, the data flywheel, **threads + the Trajectory view** |
+| **[7 — Improving evals](module_7_improving_evals/)** | Align an LLM judge to your humans; promote traces into a dataset; see what **LangSmith Engine** automates of that loop. | annotation queues, "evaluate the evaluator", **few-shot judge alignment**, **production→dataset curation**, **Engine** |
+| **[8 — Production CI](module_8_production_ci/)** | Monitor production for quality drift. | scheduled monitor, baseline/drift alerting, scheduled GitHub Actions |
 
 The same HR agent (`hr_agent/`) is the system-under-test in every module.
 
@@ -136,7 +138,7 @@ python module_2_single_turn/deterministic_evals.py
 python module_3_agent_evals/trajectory_evals.py
 python module_3_agent_evals/tool_evals.py
 python module_3_agent_evals/replay_evals.py
-python module_5_online_evals/reference_free_evals.py
+python module_6_online_evals/reference_free_evals.py
 python hr_agent/mocking.py
 python hr_agent/replay.py
 python module_2_single_turn/system1_client.py
@@ -155,14 +157,17 @@ python module_2_single_turn/run_eval.py
 python module_3_agent_evals/run_eval.py
 python module_3_agent_evals/mocked_eval.py           # mocked tool failures
 python module_3_agent_evals/replay_eval.py           # stale data: frozen vs drifted world
-python module_4_ci/ci_gate.py --suite agent
+python module_4_multi_turn/run_eval.py               # one turn, history held fixed
+python module_4_multi_turn/simulated_eval.py         # whole threads, simulated user
+python module_4_multi_turn/multimodal_run_eval.py    # receipts sent across turns
+python module_5_ci/ci_gate.py --suite agent
 
 # Session 2 — production evals
-python module_5_online_evals/production_traffic.py   # create live traces (threads)
-python module_5_online_evals/score_traces.py         # online-eval loop
-python module_6_improving_evals/judge_alignment.py   # zero-shot vs few-shot
-python module_6_improving_evals/curate_dataset.py    # traces -> dataset (flywheel)
-python module_7_production_ci/monitor.py             # drift vs baseline
+python module_6_online_evals/production_traffic.py   # create live traces (threads)
+python module_6_online_evals/score_traces.py         # online-eval loop
+python module_7_improving_evals/judge_alignment.py   # zero-shot vs few-shot
+python module_7_improving_evals/curate_dataset.py    # traces -> dataset (flywheel)
+python module_8_production_ci/monitor.py             # drift vs baseline
 
 # Snapshot a real trace so it can be replayed (dry run by default)
 python module_3_agent_evals/snapshot_trace.py --run-id <root-run-uuid>
@@ -176,7 +181,7 @@ Each prints a link/name to open the experiment (or project) in LangSmith.
 > need API keys, so a workshop repo that fired them automatically would bill
 > anyone who forked it and fail for anyone who hadn't configured secrets. Each
 > file documents exactly which triggers to uncomment to arm it for real. See
-> [module 4](module_4_ci/) and [module 7](module_7_production_ci/).
+> [module 5](module_5_ci/) and [module 8](module_8_production_ci/).
 
 ---
 
@@ -188,11 +193,12 @@ hr_agent/                  # the system under test (agent + tools + mock data + 
 module_1_fundamentals/     # concepts + first eval
 module_2_single_turn/      # deterministic + LLM-judge + System 1 evaluators; which-evaluator guide
 module_3_agent_evals/      # trajectory + tool evaluators
-module_4_ci/               # pytest gate, aggregate gate, GitHub Actions
+module_4_multi_turn/       # turn-level + simulated-user evals, text and multimodal
+module_5_ci/               # pytest gate, aggregate gate, GitHub Actions
 # --- Session 2: Evals for Production ---
-module_5_online_evals/     # reference-free evals + scoring live traces
-module_6_improving_evals/  # annotation queues + few-shot judge alignment
-module_7_production_ci/    # scheduled drift monitor + baseline
+module_6_online_evals/     # reference-free evals + scoring live traces
+module_7_improving_evals/  # annotation queues + few-shot judge alignment
+module_8_production_ci/    # scheduled drift monitor + baseline
 .github/workflows/evals.yml         # offline gate (reference; manual-only)
 .github/workflows/online-evals.yml  # online monitor (reference; manual-only)
 config.py                  # model + LangSmith config, experiment metadata
@@ -213,7 +219,11 @@ hr-onboarding/policy-qa/intro             # Module 1
 hr-onboarding/policy-qa/v1                # Module 2
 hr-onboarding/tool-selection/v1           # Module 3
 hr-onboarding/tool-failures/v1            # Module 3 (mocked)
-hr-onboarding/policy-qa/from-production   # Module 6 (curated)
+hr-onboarding/expense-receipts/v1         # Module 2 (multimodal)
+hr-onboarding/multi-turn/v1               # Module 4
+hr-onboarding/multi-turn-simulated/v1     # Module 4 (simulated user)
+hr-onboarding/expense-receipts-multi-turn/v1  # Module 4 (multimodal)
+hr-onboarding/policy-qa/from-production   # Module 7 (curated)
 ```
 
 Slash-separated names sort and filter cleanly in the UI. Prose titles don't.
@@ -250,7 +260,7 @@ held_out = {e.id for e in client.list_examples(dataset_name=NAME, splits=["scrat
 data = [e for e in all_examples if e.id not in held_out]
 ```
 
-`module_4_ci/ci_gate.py` does this and prints the accounting every run
+`module_5_ci/ci_gate.py` does this and prints the accounting every run
 (total / gated / held out / unassigned), so drift shows up in the CI log.
 `--require-splits` turns "someone forgot" into a hard failure.
 
@@ -281,8 +291,8 @@ and author via `config.experiment_metadata()`.
 
 ### Response caching: local yes, CI no
 
-`module_4_ci/conftest.py` points `LANGSMITH_TEST_CACHE` at `fixtures/cassettes/`
-so local test runs record and replay model calls. Measured on the module 4
+`module_5_ci/conftest.py` points `LANGSMITH_TEST_CACHE` at `fixtures/cassettes/`
+so local test runs record and replay model calls. Measured on the module 5
 suite: **~45 s cold → ~1.4 s fully cached.**
 
 It's **disabled when `$CI` is set**: a gate that replays yesterday's responses
@@ -295,7 +305,7 @@ what you *do* want in CI, because it holds the world still while the agent (the
 thing under test) varies. See [Module 3](module_3_agent_evals/README.md#stale-data-when-the-world-changes-under-your-ground-truth). Cassettes are gitignored — no
 credentials reach disk, but their filenames are keyed on the LangSmith dataset
 UUID, so they'd never replay in another workspace. `WORKSHOP_NO_CACHE=1` forces
-real calls locally. See [module 4](module_4_ci/) for the `cached_hosts` trap.
+real calls locally. See [module 5](module_5_ci/) for the `cached_hosts` trap.
 
 ---
 
@@ -348,7 +358,7 @@ skill ships an `upload_evaluators.py` that does this with `--project` and
 `--sample-rate`). So a single reviewed definition in your repo can drive both
 the pre-merge gate and sampled scoring of production traffic — you do not have
 to maintain the same logic in two places to get online evals. See
-[module 5](module_5_online_evals/).
+[module 6](module_6_online_evals/).
 
 Two caveats worth knowing before you commit to either direction:
 

@@ -1,4 +1,4 @@
-"""Module 6 — an LLM judge you can align with few-shot examples.
+"""Module 7 — an LLM judge you can align with few-shot examples.
 
 A generic LLM judge grades against a generic notion of "good". But your team has a
 *house style* the model can't guess from a one-line rubric — and when the judge's

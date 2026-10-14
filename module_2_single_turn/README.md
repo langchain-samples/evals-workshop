@@ -106,7 +106,7 @@ client.evaluate(target, data=data, ...)
 
 > Note this is the *fail-open* direction — fine for slicing a dataset by hand,
 > wrong for a CI gate, where an example with no split assigned would be
-> silently skipped. See [module 4](../module_4_ci/) and the top-level README.
+> silently skipped. See [module 5](../module_5_ci/) and the top-level README.
 
 ---
 
@@ -212,6 +212,9 @@ truth, the same evaluator can run on production traces.
 To slice results, group the experiment by the `image_quality` or `scenario`
 metadata. If accuracy holds on `clean` and drops on `degraded`, the problem is
 image quality, not reasoning.
+
+> For files sent over several messages (a receipt that arrives two turns later),
+> see [Module 4 → multimodal multi-turn](../module_4_multi_turn/README.md#multimodal-multi-turn-files-arrive-across-turns).
 
 > From production: a `@traceable` function can log files as attachments
 > (`langsmith.schemas.Attachment`), and `create_examples` accepts

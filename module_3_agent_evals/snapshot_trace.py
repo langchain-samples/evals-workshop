@@ -23,7 +23,7 @@ with no answer key; move it to ``gate`` once someone has filled one in.
 
 ⚠️  **Traces of a real HR agent carry employee PII.** Recorded tool outputs are
 whole employee records. This script does not redact anything — same stance as
-`module_6_improving_evals/curate_dataset.py`, and for the same reason. Dry-run
+`module_7_improving_evals/curate_dataset.py`, and for the same reason. Dry-run
 first, and give the dataset the access controls of the project it came from.
 """
 
@@ -40,7 +40,7 @@ from langsmith import Client
 
 from config import require_langsmith
 from hr_agent.replay import recorded_calls_from_run, validate_recorded
-from module_5_online_evals.score_traces import _question_from_run
+from module_6_online_evals.score_traces import _question_from_run
 
 # {domain}/{capability}/{version_or_variant} — see the top-level README.
 DEFAULT_DATASET = "hr-onboarding/replay-onboarding/from-production"

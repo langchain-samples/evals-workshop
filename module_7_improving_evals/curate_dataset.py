@@ -1,6 +1,6 @@
-"""Module 6 — close the flywheel: turn production traces into a dataset.
+"""Module 7 — close the flywheel: turn production traces into a dataset.
 
-Module 5 scored live traces. This step is what makes that worth doing: the
+Module 6 scored live traces. This step is what makes that worth doing: the
 interesting traces — the ones your online evals flagged, or a human labeled in
 the annotation queue — get promoted into a **curated offline dataset**. From
 then on they're a permanent regression test. A failure that happened once in
@@ -9,7 +9,7 @@ production can never quietly happen again.
 ```
 production traces ──► online evals flag ──► human labels ──► THIS SCRIPT ──► dataset
                                                                                 │
-                                    Modules 1-4 run against it forever ◄────────┘
+                                    Modules 1–5 run against it forever ◄────────┘
 ```
 
 Every created example carries `source_run_id`, so LangSmith links each dataset
@@ -44,9 +44,9 @@ Selection modes:
   --all       every recent root trace.
 
 Run:
-    python module_6_improving_evals/curate_dataset.py --flagged
-    python module_6_improving_evals/curate_dataset.py --labeled --limit 50
-    python module_6_improving_evals/curate_dataset.py --all --dry-run
+    python module_7_improving_evals/curate_dataset.py --flagged
+    python module_7_improving_evals/curate_dataset.py --labeled --limit 50
+    python module_7_improving_evals/curate_dataset.py --all --dry-run
 """
 
 from __future__ import annotations
@@ -60,8 +60,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from langsmith import Client
 
 from config import require_langsmith
-from module_5_online_evals.project import PRODUCTION_PROJECT
-from module_5_online_evals.score_traces import _answer_from_run, _question_from_run
+from module_6_online_evals.project import PRODUCTION_PROJECT
+from module_6_online_evals.score_traces import _answer_from_run, _question_from_run
 
 # {domain}/{capability}/{version_or_variant} — see the top-level README.
 DATASET_NAME = "hr-onboarding/policy-qa/from-production"
@@ -167,7 +167,7 @@ def main() -> None:
     if not runs:
         raise SystemExit(
             f"No traces in project '{args.project}'. Generate some with "
-            "module_5_online_evals/production_traffic.py."
+            "module_6_online_evals/production_traffic.py."
         )
 
     selected, scores = select_runs(client, runs, args.mode)

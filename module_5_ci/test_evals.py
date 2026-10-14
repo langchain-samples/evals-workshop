@@ -1,4 +1,4 @@
-"""Module 4 — per-example eval tests via the langsmith[pytest] plugin.
+"""Module 5 — per-example eval tests via the langsmith[pytest] plugin.
 
 This is the "per-example gate" pattern: each dataset example becomes a pytest
 test case, so CI shows you *exactly which* example regressed, not just an
@@ -6,7 +6,7 @@ aggregate. The `@pytest.mark.langsmith` decorator also logs each case (inputs,
 outputs, feedback) to LangSmith so the run shows up as a test experiment.
 
 Run:
-    pytest module_4_ci/test_evals.py -v --langsmith-output
+    pytest module_5_ci/test_evals.py -v --langsmith-output
 
 We assert only on the DETERMINISTIC, safety-critical metrics here — they're
 cheap, stable, and the right thing to *block a merge* on. Fuzzy LLM-judge
@@ -48,7 +48,7 @@ from module_2_single_turn.deterministic_evals import (
 from module_3_agent_evals.datasets import EXAMPLES as AGENT_EXAMPLES
 from module_3_agent_evals.tool_evals import correct_employee_id
 from module_3_agent_evals.trajectory_evals import no_forbidden_tools, required_tools_used
-from module_4_ci.ci_gate import HELD_OUT_SPLITS
+from module_5_ci.ci_gate import HELD_OUT_SPLITS
 
 # Gate on everything except the held-out splits — see the module docstring.
 # `e.get("split")` is None for an example that never declared one; None is not

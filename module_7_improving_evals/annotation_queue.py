@@ -1,4 +1,4 @@
-"""Module 6 — push production traces to an annotation queue for human review.
+"""Module 7 — push production traces to an annotation queue for human review.
 
 Few-shot alignment (few_shot_judge.py) needs human-labeled examples. Where do
 those labels come from? An **annotation queue**: a review inbox in LangSmith where
@@ -11,7 +11,7 @@ recent production traces, uses the deterministic reference-free checks from Modu
 5 to prioritize the suspicious ones (deflected or empty answers), and adds them to
 a queue. A reviewer then labels them in the UI.
 
-Run:  python module_6_improving_evals/annotation_queue.py [--limit 20] [--project NAME]
+Run:  python module_7_improving_evals/annotation_queue.py [--limit 20] [--project NAME]
 """
 
 from __future__ import annotations
@@ -25,9 +25,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from langsmith import Client
 
 from config import require_langsmith
-from module_5_online_evals.project import PRODUCTION_PROJECT
-from module_5_online_evals.reference_free_evals import DETERMINISTIC_ONLINE_EVALUATORS
-from module_5_online_evals.score_traces import _answer_from_run, _question_from_run
+from module_6_online_evals.project import PRODUCTION_PROJECT
+from module_6_online_evals.reference_free_evals import DETERMINISTIC_ONLINE_EVALUATORS
+from module_6_online_evals.score_traces import _answer_from_run, _question_from_run
 
 QUEUE_NAME = "HR Agent — review for labeling"
 
@@ -87,7 +87,7 @@ def main() -> None:
     if not runs:
         raise SystemExit(
             f"No traces in project '{args.project}'. Run "
-            "module_5_online_evals/production_traffic.py first."
+            "module_6_online_evals/production_traffic.py first."
         )
 
     if args.all:
